@@ -13,6 +13,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppRadiosRouteImport } from './routes/_app.radios'
+import { Route as AppMestrasManutencaoRouteImport } from './routes/_app.mestras-manutencao'
 import { Route as AppChavesRouteImport } from './routes/_app.chaves'
 import { Route as AppCcrRouteImport } from './routes/_app.ccr'
 
@@ -35,6 +36,11 @@ const AppRadiosRoute = AppRadiosRouteImport.update({
   path: '/radios',
   getParentRoute: () => AppRoute,
 } as any)
+const AppMestrasManutencaoRoute = AppMestrasManutencaoRouteImport.update({
+  id: '/mestras-manutencao',
+  path: '/mestras-manutencao',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppChavesRoute = AppChavesRouteImport.update({
   id: '/chaves',
   path: '/chaves',
@@ -51,6 +57,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/ccr': typeof AppCcrRoute
   '/chaves': typeof AppChavesRoute
+  '/mestras-manutencao': typeof AppMestrasManutencaoRoute
   '/radios': typeof AppRadiosRoute
 }
 export interface FileRoutesByTo {
@@ -58,6 +65,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/ccr': typeof AppCcrRoute
   '/chaves': typeof AppChavesRoute
+  '/mestras-manutencao': typeof AppMestrasManutencaoRoute
   '/radios': typeof AppRadiosRoute
 }
 export interface FileRoutesById {
@@ -67,13 +75,20 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/_app/ccr': typeof AppCcrRoute
   '/_app/chaves': typeof AppChavesRoute
+  '/_app/mestras-manutencao': typeof AppMestrasManutencaoRoute
   '/_app/radios': typeof AppRadiosRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/ccr' | '/chaves' | '/radios'
+  fullPaths:
+    | '/'
+    | '/login'
+    | '/ccr'
+    | '/chaves'
+    | '/mestras-manutencao'
+    | '/radios'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/ccr' | '/chaves' | '/radios'
+  to: '/' | '/login' | '/ccr' | '/chaves' | '/mestras-manutencao' | '/radios'
   id:
     | '__root__'
     | '/'
@@ -81,6 +96,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/_app/ccr'
     | '/_app/chaves'
+    | '/_app/mestras-manutencao'
     | '/_app/radios'
   fileRoutesById: FileRoutesById
 }
@@ -120,6 +136,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppRadiosRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/mestras-manutencao': {
+      id: '/_app/mestras-manutencao'
+      path: '/mestras-manutencao'
+      fullPath: '/mestras-manutencao'
+      preLoaderRoute: typeof AppMestrasManutencaoRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/chaves': {
       id: '/_app/chaves'
       path: '/chaves'
@@ -140,12 +163,14 @@ declare module '@tanstack/react-router' {
 interface AppRouteChildren {
   AppCcrRoute: typeof AppCcrRoute
   AppChavesRoute: typeof AppChavesRoute
+  AppMestrasManutencaoRoute: typeof AppMestrasManutencaoRoute
   AppRadiosRoute: typeof AppRadiosRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
   AppCcrRoute: AppCcrRoute,
   AppChavesRoute: AppChavesRoute,
+  AppMestrasManutencaoRoute: AppMestrasManutencaoRoute,
   AppRadiosRoute: AppRadiosRoute,
 }
 
