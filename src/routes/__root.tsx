@@ -38,11 +38,11 @@ export const Route = createRootRoute({
       { property: "og:description", content: "Sistema de gestão operacional para resort de luxo." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
-      { name: "twitter:site", content: "@Lovable" },
       { name: "twitter:title", content: "Wellness Control Hub" },
       { name: "twitter:description", content: "Sistema de gestão operacional para resort de luxo." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/e0a1d63c-108c-41cb-ac35-ef581c46e28b/id-preview-d11971f1--a7cd4ef2-59d1-4d19-a321-2fce8c220647.lovable.app-1777068091948.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/e0a1d63c-108c-41cb-ac35-ef581c46e28b/id-preview-d11971f1--a7cd4ef2-59d1-4d19-a321-2fce8c220647.lovable.app-1777068091948.png" },
+      { name: "twitter:site", content: "@wellness" },
+{ property: "og:image", content: "/og-image.png" },
+{ name: "twitter:image", content: "/og-image.png" },
     ],
     links: [
       {
