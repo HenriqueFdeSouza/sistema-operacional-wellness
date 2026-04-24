@@ -9,38 +9,173 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AppVeiculosRouteImport } from './routes/_app.veiculos'
+import { Route as AppRadiosRouteImport } from './routes/_app.radios'
+import { Route as AppPcpRouteImport } from './routes/_app.pcp'
+import { Route as AppMestrasRecepcaoRouteImport } from './routes/_app.mestras-recepcao'
+import { Route as AppMestrasManutencaoRouteImport } from './routes/_app.mestras-manutencao'
+import { Route as AppChavesRouteImport } from './routes/_app.chaves'
+import { Route as AppCcrRouteImport } from './routes/_app.ccr'
+import { Route as AppArmariosRouteImport } from './routes/_app.armarios'
 
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppRoute = AppRouteImport.update({
+  id: '/_app',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppVeiculosRoute = AppVeiculosRouteImport.update({
+  id: '/veiculos',
+  path: '/veiculos',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppRadiosRoute = AppRadiosRouteImport.update({
+  id: '/radios',
+  path: '/radios',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppPcpRoute = AppPcpRouteImport.update({
+  id: '/pcp',
+  path: '/pcp',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppMestrasRecepcaoRoute = AppMestrasRecepcaoRouteImport.update({
+  id: '/mestras-recepcao',
+  path: '/mestras-recepcao',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppMestrasManutencaoRoute = AppMestrasManutencaoRouteImport.update({
+  id: '/mestras-manutencao',
+  path: '/mestras-manutencao',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppChavesRoute = AppChavesRouteImport.update({
+  id: '/chaves',
+  path: '/chaves',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppCcrRoute = AppCcrRouteImport.update({
+  id: '/ccr',
+  path: '/ccr',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppArmariosRoute = AppArmariosRouteImport.update({
+  id: '/armarios',
+  path: '/armarios',
+  getParentRoute: () => AppRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/login': typeof LoginRoute
+  '/armarios': typeof AppArmariosRoute
+  '/ccr': typeof AppCcrRoute
+  '/chaves': typeof AppChavesRoute
+  '/mestras-manutencao': typeof AppMestrasManutencaoRoute
+  '/mestras-recepcao': typeof AppMestrasRecepcaoRoute
+  '/pcp': typeof AppPcpRoute
+  '/radios': typeof AppRadiosRoute
+  '/veiculos': typeof AppVeiculosRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/login': typeof LoginRoute
+  '/armarios': typeof AppArmariosRoute
+  '/ccr': typeof AppCcrRoute
+  '/chaves': typeof AppChavesRoute
+  '/mestras-manutencao': typeof AppMestrasManutencaoRoute
+  '/mestras-recepcao': typeof AppMestrasRecepcaoRoute
+  '/pcp': typeof AppPcpRoute
+  '/radios': typeof AppRadiosRoute
+  '/veiculos': typeof AppVeiculosRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_app': typeof AppRouteWithChildren
+  '/login': typeof LoginRoute
+  '/_app/armarios': typeof AppArmariosRoute
+  '/_app/ccr': typeof AppCcrRoute
+  '/_app/chaves': typeof AppChavesRoute
+  '/_app/mestras-manutencao': typeof AppMestrasManutencaoRoute
+  '/_app/mestras-recepcao': typeof AppMestrasRecepcaoRoute
+  '/_app/pcp': typeof AppPcpRoute
+  '/_app/radios': typeof AppRadiosRoute
+  '/_app/veiculos': typeof AppVeiculosRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/login'
+    | '/armarios'
+    | '/ccr'
+    | '/chaves'
+    | '/mestras-manutencao'
+    | '/mestras-recepcao'
+    | '/pcp'
+    | '/radios'
+    | '/veiculos'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/login'
+    | '/armarios'
+    | '/ccr'
+    | '/chaves'
+    | '/mestras-manutencao'
+    | '/mestras-recepcao'
+    | '/pcp'
+    | '/radios'
+    | '/veiculos'
+  id:
+    | '__root__'
+    | '/'
+    | '/_app'
+    | '/login'
+    | '/_app/armarios'
+    | '/_app/ccr'
+    | '/_app/chaves'
+    | '/_app/mestras-manutencao'
+    | '/_app/mestras-recepcao'
+    | '/_app/pcp'
+    | '/_app/radios'
+    | '/_app/veiculos'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AppRoute: typeof AppRouteWithChildren
+  LoginRoute: typeof LoginRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_app': {
+      id: '/_app'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AppRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,11 +183,93 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_app/veiculos': {
+      id: '/_app/veiculos'
+      path: '/veiculos'
+      fullPath: '/veiculos'
+      preLoaderRoute: typeof AppVeiculosRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/radios': {
+      id: '/_app/radios'
+      path: '/radios'
+      fullPath: '/radios'
+      preLoaderRoute: typeof AppRadiosRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/pcp': {
+      id: '/_app/pcp'
+      path: '/pcp'
+      fullPath: '/pcp'
+      preLoaderRoute: typeof AppPcpRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/mestras-recepcao': {
+      id: '/_app/mestras-recepcao'
+      path: '/mestras-recepcao'
+      fullPath: '/mestras-recepcao'
+      preLoaderRoute: typeof AppMestrasRecepcaoRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/mestras-manutencao': {
+      id: '/_app/mestras-manutencao'
+      path: '/mestras-manutencao'
+      fullPath: '/mestras-manutencao'
+      preLoaderRoute: typeof AppMestrasManutencaoRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/chaves': {
+      id: '/_app/chaves'
+      path: '/chaves'
+      fullPath: '/chaves'
+      preLoaderRoute: typeof AppChavesRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/ccr': {
+      id: '/_app/ccr'
+      path: '/ccr'
+      fullPath: '/ccr'
+      preLoaderRoute: typeof AppCcrRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/armarios': {
+      id: '/_app/armarios'
+      path: '/armarios'
+      fullPath: '/armarios'
+      preLoaderRoute: typeof AppArmariosRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
+interface AppRouteChildren {
+  AppArmariosRoute: typeof AppArmariosRoute
+  AppCcrRoute: typeof AppCcrRoute
+  AppChavesRoute: typeof AppChavesRoute
+  AppMestrasManutencaoRoute: typeof AppMestrasManutencaoRoute
+  AppMestrasRecepcaoRoute: typeof AppMestrasRecepcaoRoute
+  AppPcpRoute: typeof AppPcpRoute
+  AppRadiosRoute: typeof AppRadiosRoute
+  AppVeiculosRoute: typeof AppVeiculosRoute
+}
+
+const AppRouteChildren: AppRouteChildren = {
+  AppArmariosRoute: AppArmariosRoute,
+  AppCcrRoute: AppCcrRoute,
+  AppChavesRoute: AppChavesRoute,
+  AppMestrasManutencaoRoute: AppMestrasManutencaoRoute,
+  AppMestrasRecepcaoRoute: AppMestrasRecepcaoRoute,
+  AppPcpRoute: AppPcpRoute,
+  AppRadiosRoute: AppRadiosRoute,
+  AppVeiculosRoute: AppVeiculosRoute,
+}
+
+const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AppRoute: AppRouteWithChildren,
+  LoginRoute: LoginRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
