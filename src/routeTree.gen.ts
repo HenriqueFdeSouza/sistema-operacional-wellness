@@ -19,6 +19,7 @@ import { Route as AppMestrasRecepcaoRouteImport } from './routes/_app.mestras-re
 import { Route as AppMestrasManutencaoRouteImport } from './routes/_app.mestras-manutencao'
 import { Route as AppChavesRouteImport } from './routes/_app.chaves'
 import { Route as AppCcrRouteImport } from './routes/_app.ccr'
+import { Route as AppArmariosRouteImport } from './routes/_app.armarios'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -69,10 +70,16 @@ const AppCcrRoute = AppCcrRouteImport.update({
   path: '/ccr',
   getParentRoute: () => AppRoute,
 } as any)
+const AppArmariosRoute = AppArmariosRouteImport.update({
+  id: '/armarios',
+  path: '/armarios',
+  getParentRoute: () => AppRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/armarios': typeof AppArmariosRoute
   '/ccr': typeof AppCcrRoute
   '/chaves': typeof AppChavesRoute
   '/mestras-manutencao': typeof AppMestrasManutencaoRoute
@@ -84,6 +91,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/armarios': typeof AppArmariosRoute
   '/ccr': typeof AppCcrRoute
   '/chaves': typeof AppChavesRoute
   '/mestras-manutencao': typeof AppMestrasManutencaoRoute
@@ -97,6 +105,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
+  '/_app/armarios': typeof AppArmariosRoute
   '/_app/ccr': typeof AppCcrRoute
   '/_app/chaves': typeof AppChavesRoute
   '/_app/mestras-manutencao': typeof AppMestrasManutencaoRoute
@@ -110,6 +119,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/login'
+    | '/armarios'
     | '/ccr'
     | '/chaves'
     | '/mestras-manutencao'
@@ -121,6 +131,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/login'
+    | '/armarios'
     | '/ccr'
     | '/chaves'
     | '/mestras-manutencao'
@@ -133,6 +144,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_app'
     | '/login'
+    | '/_app/armarios'
     | '/_app/ccr'
     | '/_app/chaves'
     | '/_app/mestras-manutencao'
@@ -220,10 +232,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppCcrRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/armarios': {
+      id: '/_app/armarios'
+      path: '/armarios'
+      fullPath: '/armarios'
+      preLoaderRoute: typeof AppArmariosRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
 interface AppRouteChildren {
+  AppArmariosRoute: typeof AppArmariosRoute
   AppCcrRoute: typeof AppCcrRoute
   AppChavesRoute: typeof AppChavesRoute
   AppMestrasManutencaoRoute: typeof AppMestrasManutencaoRoute
@@ -234,6 +254,7 @@ interface AppRouteChildren {
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppArmariosRoute: AppArmariosRoute,
   AppCcrRoute: AppCcrRoute,
   AppChavesRoute: AppChavesRoute,
   AppMestrasManutencaoRoute: AppMestrasManutencaoRoute,
