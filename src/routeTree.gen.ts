@@ -12,7 +12,9 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AppVeiculosRouteImport } from './routes/_app.veiculos'
 import { Route as AppRadiosRouteImport } from './routes/_app.radios'
+import { Route as AppPcpRouteImport } from './routes/_app.pcp'
 import { Route as AppMestrasRecepcaoRouteImport } from './routes/_app.mestras-recepcao'
 import { Route as AppMestrasManutencaoRouteImport } from './routes/_app.mestras-manutencao'
 import { Route as AppChavesRouteImport } from './routes/_app.chaves'
@@ -32,9 +34,19 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppVeiculosRoute = AppVeiculosRouteImport.update({
+  id: '/veiculos',
+  path: '/veiculos',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppRadiosRoute = AppRadiosRouteImport.update({
   id: '/radios',
   path: '/radios',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppPcpRoute = AppPcpRouteImport.update({
+  id: '/pcp',
+  path: '/pcp',
   getParentRoute: () => AppRoute,
 } as any)
 const AppMestrasRecepcaoRoute = AppMestrasRecepcaoRouteImport.update({
@@ -65,7 +77,9 @@ export interface FileRoutesByFullPath {
   '/chaves': typeof AppChavesRoute
   '/mestras-manutencao': typeof AppMestrasManutencaoRoute
   '/mestras-recepcao': typeof AppMestrasRecepcaoRoute
+  '/pcp': typeof AppPcpRoute
   '/radios': typeof AppRadiosRoute
+  '/veiculos': typeof AppVeiculosRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -74,7 +88,9 @@ export interface FileRoutesByTo {
   '/chaves': typeof AppChavesRoute
   '/mestras-manutencao': typeof AppMestrasManutencaoRoute
   '/mestras-recepcao': typeof AppMestrasRecepcaoRoute
+  '/pcp': typeof AppPcpRoute
   '/radios': typeof AppRadiosRoute
+  '/veiculos': typeof AppVeiculosRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -85,7 +101,9 @@ export interface FileRoutesById {
   '/_app/chaves': typeof AppChavesRoute
   '/_app/mestras-manutencao': typeof AppMestrasManutencaoRoute
   '/_app/mestras-recepcao': typeof AppMestrasRecepcaoRoute
+  '/_app/pcp': typeof AppPcpRoute
   '/_app/radios': typeof AppRadiosRoute
+  '/_app/veiculos': typeof AppVeiculosRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -96,7 +114,9 @@ export interface FileRouteTypes {
     | '/chaves'
     | '/mestras-manutencao'
     | '/mestras-recepcao'
+    | '/pcp'
     | '/radios'
+    | '/veiculos'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -105,7 +125,9 @@ export interface FileRouteTypes {
     | '/chaves'
     | '/mestras-manutencao'
     | '/mestras-recepcao'
+    | '/pcp'
     | '/radios'
+    | '/veiculos'
   id:
     | '__root__'
     | '/'
@@ -115,7 +137,9 @@ export interface FileRouteTypes {
     | '/_app/chaves'
     | '/_app/mestras-manutencao'
     | '/_app/mestras-recepcao'
+    | '/_app/pcp'
     | '/_app/radios'
+    | '/_app/veiculos'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -147,11 +171,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_app/veiculos': {
+      id: '/_app/veiculos'
+      path: '/veiculos'
+      fullPath: '/veiculos'
+      preLoaderRoute: typeof AppVeiculosRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/radios': {
       id: '/_app/radios'
       path: '/radios'
       fullPath: '/radios'
       preLoaderRoute: typeof AppRadiosRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/pcp': {
+      id: '/_app/pcp'
+      path: '/pcp'
+      fullPath: '/pcp'
+      preLoaderRoute: typeof AppPcpRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/mestras-recepcao': {
@@ -190,7 +228,9 @@ interface AppRouteChildren {
   AppChavesRoute: typeof AppChavesRoute
   AppMestrasManutencaoRoute: typeof AppMestrasManutencaoRoute
   AppMestrasRecepcaoRoute: typeof AppMestrasRecepcaoRoute
+  AppPcpRoute: typeof AppPcpRoute
   AppRadiosRoute: typeof AppRadiosRoute
+  AppVeiculosRoute: typeof AppVeiculosRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
@@ -198,7 +238,9 @@ const AppRouteChildren: AppRouteChildren = {
   AppChavesRoute: AppChavesRoute,
   AppMestrasManutencaoRoute: AppMestrasManutencaoRoute,
   AppMestrasRecepcaoRoute: AppMestrasRecepcaoRoute,
+  AppPcpRoute: AppPcpRoute,
   AppRadiosRoute: AppRadiosRoute,
+  AppVeiculosRoute: AppVeiculosRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
