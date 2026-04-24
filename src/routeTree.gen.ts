@@ -14,6 +14,7 @@ import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppRadiosRouteImport } from './routes/_app.radios'
 import { Route as AppChavesRouteImport } from './routes/_app.chaves'
+import { Route as AppCcrRouteImport } from './routes/_app.ccr'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -39,16 +40,23 @@ const AppChavesRoute = AppChavesRouteImport.update({
   path: '/chaves',
   getParentRoute: () => AppRoute,
 } as any)
+const AppCcrRoute = AppCcrRouteImport.update({
+  id: '/ccr',
+  path: '/ccr',
+  getParentRoute: () => AppRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/ccr': typeof AppCcrRoute
   '/chaves': typeof AppChavesRoute
   '/radios': typeof AppRadiosRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/ccr': typeof AppCcrRoute
   '/chaves': typeof AppChavesRoute
   '/radios': typeof AppRadiosRoute
 }
@@ -57,15 +65,23 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
+  '/_app/ccr': typeof AppCcrRoute
   '/_app/chaves': typeof AppChavesRoute
   '/_app/radios': typeof AppRadiosRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/chaves' | '/radios'
+  fullPaths: '/' | '/login' | '/ccr' | '/chaves' | '/radios'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/chaves' | '/radios'
-  id: '__root__' | '/' | '/_app' | '/login' | '/_app/chaves' | '/_app/radios'
+  to: '/' | '/login' | '/ccr' | '/chaves' | '/radios'
+  id:
+    | '__root__'
+    | '/'
+    | '/_app'
+    | '/login'
+    | '/_app/ccr'
+    | '/_app/chaves'
+    | '/_app/radios'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -111,15 +127,24 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppChavesRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/ccr': {
+      id: '/_app/ccr'
+      path: '/ccr'
+      fullPath: '/ccr'
+      preLoaderRoute: typeof AppCcrRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
 interface AppRouteChildren {
+  AppCcrRoute: typeof AppCcrRoute
   AppChavesRoute: typeof AppChavesRoute
   AppRadiosRoute: typeof AppRadiosRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppCcrRoute: AppCcrRoute,
   AppChavesRoute: AppChavesRoute,
   AppRadiosRoute: AppRadiosRoute,
 }
