@@ -31,6 +31,46 @@ import {
   dateKey,
   todayKey,
 } from "@/lib/datetime";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+const SETORES_CHAVE = [
+  "A&B",
+  "Cozinha",
+  "Desenvolvimento",
+  "E&L",
+  "Governança",
+  "Hotelaria",
+  "Manutenção",
+  "Piscina",
+  "Recepção",
+  "Segurança",
+  "SPA",
+];
+
+const AGENTES_OPERACIONAIS = [
+  "AMANDA LUIZA",
+  "BRENO LIMA",
+  "EDUARDO",
+  "ELIABE FALCÃO",
+  "GEICIANE SILVA",
+  "GERMANA OLIVEIRA",
+  "HENRIQUE SOUZA",
+  "KAUÃ VITOR",
+  "KAYO DOUGLAS",
+  "MATEUS BARBOSA",
+  "NAIARA",
+  "RAFAEL",
+  "SAMUEL VIANA",
+  "THAMARA MENEZES",
+  "VINÍCIOS",
+  "WAGNER COSTA",
+];
 
 export const Route = createFileRoute("/_app/chaves")({
   head: () => ({ meta: [{ title: "Chaves — Wellness Control Hub" }] }),
@@ -224,10 +264,10 @@ function NovaChaveDialog({ onCreated }: { onCreated: () => void }) {
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!chave.trim() || !colab.trim()) {
-      toast.error("Preencha chave e colaborador");
-      return;
-    }
+    if (!chave.trim() || !colab.trim() || !setor.trim() || !agente.trim()) {
+  toast.error("Preencha chave, colaborador, setor e agente que entregou");
+  return;
+}
     chavesService.create({
       chave: chave.trim(),
       colaborador_saida: colab.trim(),
@@ -276,19 +316,35 @@ function NovaChaveDialog({ onCreated }: { onCreated: () => void }) {
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
-            <Label htmlFor="setor">Setor</Label>
-            <Input
-              id="setor"
-              value={setor}
-              onChange={(e) => setSetor(e.target.value)}
-              placeholder="Ex: VIPER, PCP, SPA"
-              className="uppercase"
-            />
-          </div>
+  <Label htmlFor="setor">Setor</Label>
+  <Select value={setor} onValueChange={setSetor}>
+    <SelectTrigger id="setor">
+      <SelectValue placeholder="Selecione o setor" />
+    </SelectTrigger>
+    <SelectContent>
+      {SETORES_CHAVE.map((s) => (
+        <SelectItem key={s} value={s}>
+          {s}
+        </SelectItem>
+      ))}
+    </SelectContent>
+  </Select>
+</div>
           <div className="space-y-2">
-            <Label htmlFor="agente">Agente</Label>
-            <Input id="agente" value={agente} onChange={(e) => setAgente(e.target.value)} />
-          </div>
+  <Label htmlFor="agente">Agente que entregou</Label>
+  <Select value={agente} onValueChange={setAgente}>
+    <SelectTrigger id="agente">
+      <SelectValue placeholder="Selecione o agente" />
+    </SelectTrigger>
+    <SelectContent>
+      {AGENTES_OPERACIONAIS.map((nome) => (
+        <SelectItem key={nome} value={nome}>
+          {nome}
+        </SelectItem>
+      ))}
+    </SelectContent>
+  </Select>
+</div>
         </div>
         <DialogFooter>
           <Button type="submit" className="bg-gradient-to-r from-primary to-secondary">

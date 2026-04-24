@@ -145,6 +145,7 @@ function CCRPage() {
                         <TableHead key={i.key as string}>{i.label}</TableHead>
                       ))}
                       <TableHead>Ação corretiva</TableHead>
+                      <TableHead>Status</TableHead>
                       <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -167,6 +168,9 @@ function CCRPage() {
                         <TableCell className="text-xs text-muted-foreground max-w-[200px] truncate">
                           {c.acao_corretiva || "—"}
                         </TableCell>
+                        <TableCell className="text-xs text-muted-foreground max-w-[160px] truncate">
+  {c.status || "—"}
+</TableCell>
                         <TableCell className="text-right">
                           <Button size="icon" variant="ghost" onClick={() => handleDelete(c.id)}>
                             <Trash2 className="h-4 w-4 text-destructive" />
@@ -205,6 +209,10 @@ function NovoCCRDialog({ onCreated }: { onCreated: () => void }) {
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!agente.trim()) {
+  toast.error("Informe o agente");
+  return;
+}
     ccrService.create({
       turno,
       horario: horario.trim(),
@@ -234,7 +242,14 @@ function NovoCCRDialog({ onCreated }: { onCreated: () => void }) {
         <div className="grid gap-4 sm:grid-cols-3">
           <div className="space-y-2">
             <Label>Turno</Label>
-            <Select value={turno} onValueChange={(v) => setTurno(v as TurnoCCR)}>
+            <Select
+  value={turno}
+  onValueChange={(v) => {
+    const novoTurno = v as TurnoCCR;
+    setTurno(novoTurno);
+    setHorario(novoTurno === "NOTURNO" ? "19:00-07:00" : "07:00-19:00");
+  }}
+>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 {TURNOS_CCR.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}

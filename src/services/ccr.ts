@@ -7,6 +7,7 @@ export const POSTOS_CCR = [
   "RONDANTE",
   "PORTARIA SOCIAL",
   "PORTARIA PRAIA",
+  "PORTARIA SERVIÇO",
   "VIGILANTE",
 ] as const;
 export const STATUS_ITEM = ["OK", "NSA", "NOK"] as const;
