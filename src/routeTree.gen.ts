@@ -13,6 +13,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppRadiosRouteImport } from './routes/_app.radios'
+import { Route as AppChavesRouteImport } from './routes/_app.chaves'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -33,15 +34,22 @@ const AppRadiosRoute = AppRadiosRouteImport.update({
   path: '/radios',
   getParentRoute: () => AppRoute,
 } as any)
+const AppChavesRoute = AppChavesRouteImport.update({
+  id: '/chaves',
+  path: '/chaves',
+  getParentRoute: () => AppRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/chaves': typeof AppChavesRoute
   '/radios': typeof AppRadiosRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/chaves': typeof AppChavesRoute
   '/radios': typeof AppRadiosRoute
 }
 export interface FileRoutesById {
@@ -49,14 +57,15 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
+  '/_app/chaves': typeof AppChavesRoute
   '/_app/radios': typeof AppRadiosRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/radios'
+  fullPaths: '/' | '/login' | '/chaves' | '/radios'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/radios'
-  id: '__root__' | '/' | '/_app' | '/login' | '/_app/radios'
+  to: '/' | '/login' | '/chaves' | '/radios'
+  id: '__root__' | '/' | '/_app' | '/login' | '/_app/chaves' | '/_app/radios'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -95,14 +104,23 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppRadiosRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/chaves': {
+      id: '/_app/chaves'
+      path: '/chaves'
+      fullPath: '/chaves'
+      preLoaderRoute: typeof AppChavesRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
 interface AppRouteChildren {
+  AppChavesRoute: typeof AppChavesRoute
   AppRadiosRoute: typeof AppRadiosRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppChavesRoute: AppChavesRoute,
   AppRadiosRoute: AppRadiosRoute,
 }
 
