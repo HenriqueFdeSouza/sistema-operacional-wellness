@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { TopBar } from "@/components/top-bar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -51,6 +51,7 @@ const SETORES_CHAVE = [
   "Recepção",
   "Segurança",
   "SPA",
+  "Viper",
 ];
 
 const AGENTES_OPERACIONAIS = [
@@ -78,11 +79,26 @@ export const Route = createFileRoute("/_app/chaves")({
 });
 
 function ChavesPage() {
-  const [items, setItems] = useState<Chave[]>(() => chavesService.list());
+  const [items, setItems] = useState<Chave[]>([]);
   const [open, setOpen] = useState(false);
   const [filterDate, setFilterDate] = useState<string>(todayKey);
+  const [loading, setLoading] = useState(true);
 
-  const refresh = () => setItems(chavesService.list());
+  const refresh = async () => {
+    try {
+      setLoading(true);
+      const data = await chavesService.list();
+      setItems(data);
+    } catch (error) {
+      toast.error("Erro ao carregar registros de chaves");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    refresh();
+  }, []);
 
   const filtered = useMemo(
     () => items.filter((r) => dateKey(r.horario_saida) === filterDate),
@@ -91,11 +107,16 @@ function ChavesPage() {
 
   const abertos = filtered.filter((r) => !r.horario_retorno).length;
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (!confirm("Excluir este registro?")) return;
-    chavesService.remove(id);
-    toast.success("Registro excluído");
-    refresh();
+
+    try {
+      await chavesService.remove(id);
+      toast.success("Registro excluído");
+      await refresh();
+    } catch (error) {
+      toast.error("Erro ao excluir registro");
+    }
   };
 
   return (
@@ -111,8 +132,8 @@ function ChavesPage() {
               </Button>
             </DialogTrigger>
             <NovaChaveDialog
-              onCreated={() => {
-                refresh();
+              onCreated={async () => {
+                await refresh();
                 setOpen(false);
               }}
             />
@@ -145,7 +166,11 @@ function ChavesPage() {
             </div>
           </div>
 
-          {filtered.length === 0 ? (
+          {loading ? (
+            <div className="p-12 text-center text-sm text-muted-foreground">
+              Carregando registros...
+            </div>
+          ) : filtered.length === 0 ? (
             <div className="p-12 text-center text-sm text-muted-foreground">
               Nenhum registro nesta data.
             </div>
@@ -158,10 +183,10 @@ function ChavesPage() {
                     <TableHead>Saída</TableHead>
                     <TableHead>Colab. saída</TableHead>
                     <TableHead>Setor</TableHead>
-                    <TableHead>Agente</TableHead>
+                    <TableHead>Agente que entregou</TableHead>
                     <TableHead>Retorno</TableHead>
                     <TableHead>Colab. retorno</TableHead>
-                    <TableHead>Agente</TableHead>
+                    <TableHead>Agente que recebeu</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
@@ -186,8 +211,8 @@ function ChaveRow({
   onDelete,
 }: {
   chave: Chave;
-  onChange: () => void;
-  onDelete: (id: string) => void;
+  onChange: () => Promise<void>;
+  onDelete: (id: string) => Promise<void>;
 }) {
   const [open, setOpen] = useState(false);
   return (
@@ -197,7 +222,11 @@ function ChaveRow({
       <TableCell>{chave.colaborador_saida}</TableCell>
       <TableCell className="text-xs">{chave.setor_saida}</TableCell>
       <TableCell className="text-xs">{chave.agente_saida}</TableCell>
-      <TableCell className="text-xs">{formatDateTime(chave.horario_retorno)}</TableCell>
+      <TableCell className="text-xs">
+  {chave.horario_retorno
+    ? formatDateTime(chave.horario_retorno)
+    : "--"}
+</TableCell>
       <TableCell>{chave.colaborador_retorno ?? "—"}</TableCell>
       <TableCell className="text-xs">{chave.agente_retorno ?? "—"}</TableCell>
       <TableCell>
@@ -217,8 +246,8 @@ function ChaveRow({
             </DialogTrigger>
             <RetornoDialog
               chave={chave}
-              onDone={() => {
-                onChange();
+              onDone={async () => {
+                await onChange();
                 setOpen(false);
               }}
             />
@@ -255,32 +284,41 @@ function StatCard({
   );
 }
 
-function NovaChaveDialog({ onCreated }: { onCreated: () => void }) {
+function NovaChaveDialog({ onCreated }: { onCreated: () => Promise<void> }) {
   const [chave, setChave] = useState("");
   const [colab, setColab] = useState("");
   const [setor, setSetor] = useState("");
   const [agente, setAgente] = useState("");
   const [saida, setSaida] = useState(() => toLocalInput(new Date().toISOString()));
+  const [saving, setSaving] = useState(false);
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!chave.trim() || !colab.trim() || !setor.trim() || !agente.trim()) {
-  toast.error("Preencha chave, colaborador, setor e agente que entregou");
-  return;
-}
-    chavesService.create({
-      chave: chave.trim(),
-      colaborador_saida: colab.trim(),
-      setor_saida: setor.trim().toUpperCase(),
-      horario_saida: fromLocalInput(saida),
-      agente_saida: agente.trim(),
-    });
-    toast.success("Saída registrada");
-    setChave("");
-    setColab("");
-    setSetor("");
-    setAgente("");
-    onCreated();
+      toast.error("Preencha chave, colaborador, setor e agente que entregou");
+      return;
+    }
+
+    try {
+      setSaving(true);
+      await chavesService.create({
+        chave: chave.trim(),
+        colaborador_saida: colab.trim(),
+        setor_saida: setor.trim(),
+        horario_saida: fromLocalInput(saida),
+        agente_saida: agente.trim(),
+      });
+      toast.success("Saída registrada");
+      setChave("");
+      setColab("");
+      setSetor("");
+      setAgente("");
+      await onCreated();
+    } catch (error) {
+      toast.error("Erro ao registrar saída");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -311,44 +349,48 @@ function NovaChaveDialog({ onCreated }: { onCreated: () => void }) {
           </div>
         </div>
         <div className="space-y-2">
-          <Label htmlFor="colab">Colaborador</Label>
+          <Label htmlFor="colab">Colaborador que pegou a chave</Label>
           <Input id="colab" value={colab} onChange={(e) => setColab(e.target.value)} />
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
-  <Label htmlFor="setor">Setor</Label>
-  <Select value={setor} onValueChange={setSetor}>
-    <SelectTrigger id="setor">
-      <SelectValue placeholder="Selecione o setor" />
-    </SelectTrigger>
-    <SelectContent>
-      {SETORES_CHAVE.map((s) => (
-        <SelectItem key={s} value={s}>
-          {s}
-        </SelectItem>
-      ))}
-    </SelectContent>
-  </Select>
-</div>
+            <Label htmlFor="setor">Setor</Label>
+            <Select value={setor} onValueChange={setSetor}>
+              <SelectTrigger id="setor">
+                <SelectValue placeholder="Selecione o setor" />
+              </SelectTrigger>
+              <SelectContent>
+                {SETORES_CHAVE.map((s) => (
+                  <SelectItem key={s} value={s}>
+                    {s}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           <div className="space-y-2">
-  <Label htmlFor="agente">Agente que entregou</Label>
-  <Select value={agente} onValueChange={setAgente}>
-    <SelectTrigger id="agente">
-      <SelectValue placeholder="Selecione o agente" />
-    </SelectTrigger>
-    <SelectContent>
-      {AGENTES_OPERACIONAIS.map((nome) => (
-        <SelectItem key={nome} value={nome}>
-          {nome}
-        </SelectItem>
-      ))}
-    </SelectContent>
-  </Select>
-</div>
+            <Label htmlFor="agente">Agente que entregou</Label>
+            <Input
+              id="agente"
+              list="agentes-chave"
+              value={agente}
+              onChange={(e) => setAgente(e.target.value)}
+              placeholder="Selecione ou digite o agente"
+            />
+            <datalist id="agentes-chave">
+              {AGENTES_OPERACIONAIS.map((nome) => (
+                <option key={nome} value={nome} />
+              ))}
+            </datalist>
+          </div>
         </div>
         <DialogFooter>
-          <Button type="submit" className="bg-gradient-to-r from-primary to-secondary">
-            Registrar saída
+          <Button
+            type="submit"
+            disabled={saving}
+            className="bg-gradient-to-r from-primary to-secondary"
+          >
+            {saving ? "Registrando..." : "Registrar saída"}
           </Button>
         </DialogFooter>
       </form>
@@ -356,22 +398,30 @@ function NovaChaveDialog({ onCreated }: { onCreated: () => void }) {
   );
 }
 
-function RetornoDialog({ chave, onDone }: { chave: Chave; onDone: () => void }) {
+function RetornoDialog({ chave, onDone }: { chave: Chave; onDone: () => Promise<void> }) {
   const [colab, setColab] = useState(chave.colaborador_saida);
   const [setor, setSetor] = useState(chave.setor_saida);
   const [agente, setAgente] = useState("");
   const [horario, setHorario] = useState(() => toLocalInput(new Date().toISOString()));
+  const [saving, setSaving] = useState(false);
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    chavesService.registrarRetorno(chave.id, {
-      colaborador_retorno: colab.trim(),
-      setor_retorno: setor.trim().toUpperCase(),
-      agente_retorno: agente.trim(),
-      horario_retorno: fromLocalInput(horario),
-    });
-    toast.success("Retorno registrado");
-    onDone();
+    try {
+      setSaving(true);
+      await chavesService.registrarRetorno(chave.id, {
+        colaborador_retorno: colab.trim(),
+        setor_retorno: setor.trim(),
+        agente_retorno: agente.trim(),
+        horario_retorno: fromLocalInput(horario),
+      });
+      toast.success("Retorno registrado");
+      await onDone();
+    } catch (error) {
+      toast.error("Erro ao registrar retorno");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -392,7 +442,7 @@ function RetornoDialog({ chave, onDone }: { chave: Chave; onDone: () => void }) 
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
-            <Label>Agente</Label>
+            <Label>Agente que recebeu</Label>
             <Input value={agente} onChange={(e) => setAgente(e.target.value)} autoFocus />
           </div>
           <div className="space-y-2">
@@ -405,8 +455,12 @@ function RetornoDialog({ chave, onDone }: { chave: Chave; onDone: () => void }) 
           </div>
         </div>
         <DialogFooter>
-          <Button type="submit" className="bg-gradient-to-r from-primary to-secondary">
-            Confirmar retorno
+          <Button
+            type="submit"
+            disabled={saving}
+            className="bg-gradient-to-r from-primary to-secondary"
+          >
+            {saving ? "Confirmando..." : "Confirmar retorno"}
           </Button>
         </DialogFooter>
       </form>

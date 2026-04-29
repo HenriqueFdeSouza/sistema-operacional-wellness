@@ -3,14 +3,14 @@ import { storage, newId, nowIso, type BaseEntity } from "./storage";
 export const RADIOS_KEY = "wellness_radios";
 
 export const SETORES_RADIO = [
-  "MANUT",
-  "RECEP",
   "A&B",
-  "PISC",
-  "GOV",
-  "AEB",
-  "FRIGOBAR",
   "E&L",
+  "Governança",
+  "Manutenção",
+  "Piscina",
+  "Recepção",
+  "Segurança",
+  "Viper",
 ] as const;
 
 export const ALTERACOES_RADIO = ["RADIO", "COMPLETO", "RADIO E CAPA"] as const;

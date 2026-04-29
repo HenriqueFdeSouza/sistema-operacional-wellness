@@ -266,19 +266,24 @@ function VeiculoDialog({
           </div>
         </div>
         <div className="space-y-2">
-          <Label>Tipo</Label>
-          <Select
-            value={observacoes}
-            onValueChange={(v) => setObservacoes(v as ObservacaoVeiculo)}
-          >
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {OBSERVACOES_VEICULO.map((o) => (
-                <SelectItem key={o} value={o}>{o}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+  <Label>Tipo</Label>
+
+  <Input
+    list="tipos-veiculo"
+    value={observacoes}
+    onChange={(e) =>
+      setObservacoes(e.target.value as ObservacaoVeiculo)
+    }
+    placeholder="Selecione ou digite o tipo"
+  />
+
+  <datalist id="tipos-veiculo">
+    <option value="PROPRIETÁRIO" />
+    <option value="PRESTADOR DE SERVIÇO" />
+    <option value="GESTOR" />
+    <option value="VISITANTE" />
+  </datalist>
+</div>
         <div className="space-y-2">
           <Label>Autorizações (opcional)</Label>
           <Textarea

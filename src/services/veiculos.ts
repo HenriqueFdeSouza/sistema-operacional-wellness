@@ -4,12 +4,12 @@ export const VEICULOS_KEY = "wellness_veiculos";
 
 export const OBSERVACOES_VEICULO = [
   "PROPRIETÁRIO",
-  "LOCATÁRIO",
-  "VISITANTE/PROCURADOR",
-  "GOVERNANÇA",
+  "PRESTADOR DE SERVIÇO",
+  "GESTOR",
+  "VISITANTE",
 ] as const;
 
-export type ObservacaoVeiculo = (typeof OBSERVACOES_VEICULO)[number];
+export type ObservacaoVeiculo = (typeof OBSERVACOES_VEICULO)[number] | string;
 
 export interface Veiculo extends BaseEntity {
   uh: string;

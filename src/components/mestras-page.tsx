@@ -138,9 +138,9 @@ export function MestrasPage({ title, description, service, setores }: Props) {
                     <TableHead>Colaborador</TableHead>
                     <TableHead>Setor</TableHead>
                     <TableHead>Saída</TableHead>
-                    <TableHead>Agente</TableHead>
-                    <TableHead>Retorno</TableHead>
-                    <TableHead>Agente</TableHead>
+                    <TableHead>Agente que entregou</TableHead>
+<TableHead>Retorno</TableHead>
+<TableHead>Agente que recebeu</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
@@ -196,9 +196,17 @@ function Row({
       <TableCell className="font-medium">{m.colaborador}</TableCell>
       <TableCell className="text-xs">{m.setor}</TableCell>
       <TableCell className="text-xs">{formatDateTime(m.horario_saida)}</TableCell>
-      <TableCell className="text-xs">{m.agente_saida}</TableCell>
-      <TableCell className="text-xs">{formatDateTime(m.horario_retorno)}</TableCell>
-      <TableCell className="text-xs">{m.agente_retorno ?? "—"}</TableCell>
+      <TableCell className="text-xs align-middle text-left">
+  {m.agente_saida}
+</TableCell>
+
+<TableCell className="text-xs align-middle">
+  {formatDateTime(m.horario_retorno)}
+</TableCell>
+
+<TableCell className="text-xs align-middle text-left">
+  {m.agente_retorno ?? "—"}
+</TableCell>
       <TableCell>
         {m.horario_retorno ? (
           <Badge className="bg-success text-success-foreground">Devolvida</Badge>
@@ -221,8 +229,8 @@ function Row({
               <form onSubmit={submit} className="space-y-4">
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
-                    <Label>Agente</Label>
-                    <Input value={agente} onChange={(e) => setAgente(e.target.value)} autoFocus />
+                    <Label>Agente que recebeu</Label>
+<Input value={agente} onChange={(e) => setAgente(e.target.value)} autoFocus />
                   </div>
                   <div className="space-y-2">
                     <Label>Horário</Label>
@@ -308,8 +316,8 @@ function NovaMestraDialog({
           </div>
         </div>
         <div className="space-y-2">
-          <Label>Agente</Label>
-          <Input value={agente} onChange={(e) => setAgente(e.target.value)} />
+          <Label>Agente que entregou</Label>
+<Input value={agente} onChange={(e) => setAgente(e.target.value)} />
         </div>
         <DialogFooter>
           <Button type="submit" className="bg-gradient-to-r from-primary to-secondary">
