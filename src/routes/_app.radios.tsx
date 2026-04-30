@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { TopBar } from "@/components/top-bar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -71,13 +71,28 @@ function todayKey(iso: string) {
 }
 
 function RadiosPage() {
-  const [items, setItems] = useState<RadioItem[]>(() => radiosService.list());
+  const [items, setItems] = useState<RadioItem[]>([]);
   const [open, setOpen] = useState(false);
   const [filterDate, setFilterDate] = useState<string>(() =>
     new Date().toISOString().slice(0, 10),
   );
+  const [loading, setLoading] = useState(true);
 
-  const refresh = () => setItems(radiosService.list());
+  const refresh = async () => {
+    try {
+      setLoading(true);
+      const data = await radiosService.list();
+      setItems(data);
+    } catch (error) {
+      toast.error("Erro ao carregar registros de rádios");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    refresh();
+  }, []);
 
   const filtered = useMemo(
     () => items.filter((r) => todayKey(r.saida) === filterDate),
@@ -86,17 +101,26 @@ function RadiosPage() {
 
   const abertos = filtered.filter((r) => !r.retorno).length;
 
-  const handleRetorno = (id: string) => {
-    radiosService.registrarRetorno(id);
-    toast.success("Retorno registrado");
-    refresh();
+  const handleRetorno = async (id: string) => {
+    try {
+      await radiosService.registrarRetorno(id);
+      toast.success("Retorno registrado");
+      await refresh();
+    } catch (error) {
+      toast.error("Erro ao registrar retorno");
+    }
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (!confirm("Excluir este registro?")) return;
-    radiosService.remove(id);
-    toast.success("Registro excluído");
-    refresh();
+
+    try {
+      await radiosService.remove(id);
+      toast.success("Registro excluído");
+      await refresh();
+    } catch (error) {
+      toast.error("Erro ao excluir registro");
+    }
   };
 
   return (
@@ -112,8 +136,8 @@ function RadiosPage() {
               </Button>
             </DialogTrigger>
             <NovaEntregaDialog
-              onCreated={() => {
-                refresh();
+              onCreated={async () => {
+                await refresh();
                 setOpen(false);
               }}
             />
@@ -148,7 +172,11 @@ function RadiosPage() {
             </div>
           </div>
 
-          {filtered.length === 0 ? (
+          {loading ? (
+            <div className="p-12 text-center text-sm text-muted-foreground">
+              Carregando registros...
+            </div>
+          ) : filtered.length === 0 ? (
             <div className="p-12 text-center text-sm text-muted-foreground">
               Nenhum registro nesta data.
             </div>
@@ -237,30 +265,41 @@ function StatCard({
   );
 }
 
-function NovaEntregaDialog({ onCreated }: { onCreated: () => void }) {
+function NovaEntregaDialog({ onCreated }: { onCreated: () => Promise<void> }) {
   const [colaborador, setColaborador] = useState("");
   const [idRadio, setIdRadio] = useState("");
-  const [setor, setSetor] = useState<SetorRadio>("MANUT");
+  const [setor, setSetor] = useState<SetorRadio>("A&B");
   const [alteracao, setAlteracao] = useState<AlteracaoRadio>("RADIO");
   const [saida, setSaida] = useState(() => toLocalInput(new Date().toISOString()));
+  const [saving, setSaving] = useState(false);
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     if (!colaborador.trim() || !idRadio.trim()) {
       toast.error("Preencha colaborador e ID do rádio");
       return;
     }
-    radiosService.create({
-      colaborador: colaborador.trim(),
-      id_radio: idRadio.trim().toUpperCase(),
-      setor,
-      alteracao,
-      saida: fromLocalInput(saida),
-    });
-    toast.success("Rádio entregue");
-    setColaborador("");
-    setIdRadio("");
-    onCreated();
+
+    try {
+      setSaving(true);
+      await radiosService.create({
+        colaborador: colaborador.trim(),
+        id_radio: idRadio.trim().toUpperCase(),
+        setor,
+        alteracao,
+        saida: fromLocalInput(saida),
+      });
+
+      toast.success("Rádio entregue");
+      setColaborador("");
+      setIdRadio("");
+      await onCreated();
+    } catch (error) {
+      toast.error("Erro ao registrar entrega");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -336,8 +375,12 @@ function NovaEntregaDialog({ onCreated }: { onCreated: () => void }) {
           </div>
         </div>
         <DialogFooter>
-          <Button type="submit" className="bg-gradient-to-r from-primary to-secondary">
-            Registrar entrega
+          <Button
+            type="submit"
+            disabled={saving}
+            className="bg-gradient-to-r from-primary to-secondary"
+          >
+            {saving ? "Registrando..." : "Registrar entrega"}
           </Button>
         </DialogFooter>
       </form>

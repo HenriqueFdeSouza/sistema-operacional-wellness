@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { TopBar } from "@/components/top-bar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,6 +36,7 @@ import {
   STATUS_ITEM,
   TURNOS_CCR,
   ccrService,
+  type AgenteCCR,
   type CCR,
   type PostoCCR,
   type StatusItem,
@@ -58,11 +59,6 @@ const ITEMS: Array<{ key: keyof CCR; label: string }> = [
   { key: "alarme", label: "Alarme" },
 ];
 
-type AgentePosto = {
-  nome: string;
-  posto: PostoCCR;
-};
-
 function statusColor(s: StatusItem) {
   if (s === "OK") return "bg-success text-success-foreground";
   if (s === "NOK") return "bg-destructive text-destructive-foreground";
@@ -70,11 +66,26 @@ function statusColor(s: StatusItem) {
 }
 
 function CCRPage() {
-  const [items, setItems] = useState(() => ccrService.list());
+  const [items, setItems] = useState<CCR[]>([]);
   const [open, setOpen] = useState(false);
   const [filterDate, setFilterDate] = useState(todayKey);
+  const [loading, setLoading] = useState(true);
 
-  const refresh = () => setItems(ccrService.list());
+  const refresh = async () => {
+    try {
+      setLoading(true);
+      const data = await ccrService.list();
+      setItems(data);
+    } catch (error) {
+      toast.error("Erro ao carregar registros do CCR");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    refresh();
+  }, []);
 
   const filtered = useMemo(
     () => items.filter((c) => dateKey(c.data) === filterDate),
@@ -87,19 +98,24 @@ function CCRPage() {
     return g;
   }, [filtered]);
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (!confirm("Excluir este registro?")) return;
-    ccrService.remove(id);
-    toast.success("Registro excluído");
-    refresh();
+
+    try {
+      await ccrService.remove(id);
+      toast.success("Registro excluído");
+      await refresh();
+    } catch (error) {
+      toast.error("Erro ao excluir registro");
+    }
   };
 
   return (
     <>
       <TopBar
-  title="Checklist CCR"
-  description="Controle operacional por turno."
-  actions={
+        title="Checklist CCR"
+        description="Controle operacional por turno."
+        actions={
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
               <Button className="gap-2 bg-gradient-to-r from-primary to-secondary">
@@ -109,8 +125,8 @@ function CCRPage() {
             </DialogTrigger>
 
             <NovoCCRDialog
-              onCreated={() => {
-                refresh();
+              onCreated={async () => {
+                await refresh();
                 setOpen(false);
               }}
             />
@@ -141,91 +157,123 @@ function CCRPage() {
           </div>
         </div>
 
-        {(["DIURNO", "NOTURNO"] as const).map((turno) => (
-          <section key={turno} className="rounded-2xl border bg-card shadow-sm overflow-hidden">
-            <div className="flex items-center gap-2 px-5 py-4 border-b bg-muted/40">
-              <ShieldCheck size={18} className="text-primary" />
-              <h3 className="text-lg font-bold">{turno}</h3>
-            </div>
-
-            {grouped[turno].length === 0 ? (
-              <div className="p-6 text-sm text-muted-foreground">
-                Sem registros para este turno.
+        {loading ? (
+          <div className="rounded-2xl border bg-card p-8 text-center text-sm text-muted-foreground">
+            Carregando registros...
+          </div>
+        ) : (
+          (["DIURNO", "NOTURNO"] as const).map((turno) => (
+            <section key={turno} className="rounded-2xl border bg-card shadow-sm overflow-hidden">
+              <div className="flex items-center gap-2 px-5 py-4 border-b bg-muted/40">
+                <ShieldCheck size={18} className="text-primary" />
+                <h3 className="text-lg font-bold">{turno}</h3>
               </div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Horário</TableHead>
-                    <TableHead>Agente</TableHead>
-                    <TableHead>Posto</TableHead>
-                    {ITEMS.map((i) => (
-                      <TableHead key={i.key}>{i.label}</TableHead>
-                    ))}
-                    <TableHead>Ação corretiva</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
 
-                <TableBody>
-                  {grouped[turno].map((c) => (
-                    <TableRow key={c.id}>
-                      <TableCell>{c.horario}</TableCell>
-                      <TableCell className="font-medium">{c.agente || "—"}</TableCell>
-                      <TableCell>{c.posto}</TableCell>
-
-                      {ITEMS.map((i) => {
-                        const v = c[i.key] as StatusItem;
-                        return (
-                          <TableCell key={i.key}>
-                            <span
-                              className={cn(
-                                "inline-flex rounded px-2 py-1 text-xs font-bold",
-                                statusColor(v),
-                              )}
-                            >
-                              {v}
-                            </span>
-                          </TableCell>
-                        );
-                      })}
-
-                      <TableCell className="text-xs text-muted-foreground max-w-[200px] truncate">
-                        {c.acao_corretiva || "—"}
-                      </TableCell>
-
-                      <TableCell className="text-xs text-muted-foreground max-w-[160px] truncate">
-                        {c.status || "—"}
-                      </TableCell>
-
-                      <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="text-destructive"
-                          onClick={() => handleDelete(c.id)}
-                        >
-                          <Trash2 size={16} />
-                        </Button>
-                      </TableCell>
+              {grouped[turno].length === 0 ? (
+                <div className="p-6 text-sm text-muted-foreground">
+                  Sem registros para este turno.
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Horário</TableHead>
+                      <TableHead>Agente</TableHead>
+<TableHead>Posto</TableHead>
+                      {ITEMS.map((i) => (
+                        <TableHead key={i.key}>{i.label}</TableHead>
+                      ))}
+                      <TableHead>Ação corretiva</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </section>
-        ))}
+                  </TableHeader>
+
+                  <TableBody>
+                    {grouped[turno].map((c) => (
+                      <TableRow key={c.id}>
+                        <TableCell>{c.horario}</TableCell>
+
+                        <TableCell className="align-top">
+  <div className="space-y-2">
+    {c.agentes.length > 0 ? (
+      c.agentes.map((agente, index) => (
+        <div key={`${agente.nome}-${index}`} className="font-medium">
+          {agente.nome}
+        </div>
+      ))
+    ) : (
+      <span className="text-xs text-muted-foreground">—</span>
+    )}
+  </div>
+</TableCell>
+
+<TableCell className="align-top">
+  <div className="space-y-2">
+    {c.agentes.length > 0 ? (
+      c.agentes.map((agente, index) => (
+        <div key={`${agente.posto}-${index}`}>
+          {agente.posto}
+        </div>
+      ))
+    ) : (
+      <span className="text-xs text-muted-foreground">—</span>
+    )}
+  </div>
+</TableCell>
+
+                        {ITEMS.map((i) => {
+                          const v = c[i.key] as StatusItem;
+                          return (
+                            <TableCell key={i.key}>
+                              <span
+                                className={cn(
+                                  "inline-flex rounded px-2 py-1 text-xs font-bold",
+                                  statusColor(v),
+                                )}
+                              >
+                                {v}
+                              </span>
+                            </TableCell>
+                          );
+                        })}
+
+                        <TableCell className="text-xs text-muted-foreground max-w-[200px] truncate">
+                          {c.acao_corretiva || "—"}
+                        </TableCell>
+
+                        <TableCell className="text-xs text-muted-foreground max-w-[160px] truncate">
+                          {c.status || "—"}
+                        </TableCell>
+
+                        <TableCell className="text-right">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-destructive"
+                            onClick={() => handleDelete(c.id)}
+                          >
+                            <Trash2 size={16} />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </section>
+          ))
+        )}
       </main>
     </>
   );
 }
 
-function NovoCCRDialog({ onCreated }: { onCreated: () => void }) {
+function NovoCCRDialog({ onCreated }: { onCreated: () => Promise<void> }) {
   const [turno, setTurno] = useState<TurnoCCR>("DIURNO");
   const [horario, setHorario] = useState("07:00-19:00");
 
-  const [agentes, setAgentes] = useState<AgentePosto[]>([
+  const [agentes, setAgentes] = useState<AgenteCCR[]>([
     {
       nome: "",
       posto: "RONDANTE",
@@ -242,6 +290,7 @@ function NovoCCRDialog({ onCreated }: { onCreated: () => void }) {
 
   const [acao, setAcao] = useState("");
   const [status, setStatus] = useState("");
+  const [saving, setSaving] = useState(false);
 
   const setItem = (key: string, v: StatusItem) =>
     setStatuses((prev) => ({ ...prev, [key]: v }));
@@ -271,15 +320,12 @@ function NovoCCRDialog({ onCreated }: { onCreated: () => void }) {
 
   function removerAgente(index: number) {
     setAgentes((prev) => {
-      if (prev.length === 1) {
-        return prev;
-      }
-
+      if (prev.length === 1) return prev;
       return prev.filter((_, i) => i !== index);
     });
   }
 
-  const submit = (e: FormEvent) => {
+  const submit = async (e: FormEvent) => {
     e.preventDefault();
 
     const agentesValidos = agentes
@@ -294,12 +340,13 @@ function NovoCCRDialog({ onCreated }: { onCreated: () => void }) {
       return;
     }
 
-    for (const agente of agentesValidos) {
-      ccrService.create({
+    try {
+      setSaving(true);
+
+      await ccrService.create({
         turno,
         horario: horario.trim(),
-        agente: agente.nome,
-        posto: agente.posto,
+        agentes: agentesValidos,
         controle_acesso: statuses.controle_acesso,
         cameras: statuses.cameras,
         radios: statuses.radios,
@@ -308,23 +355,23 @@ function NovoCCRDialog({ onCreated }: { onCreated: () => void }) {
         acao_corretiva: acao.trim(),
         status: status.trim(),
       });
+
+      toast.success("Checklist registrado");
+
+      setAgentes([
+        {
+          nome: "",
+          posto: "RONDANTE",
+        },
+      ]);
+      setAcao("");
+      setStatus("");
+      await onCreated();
+    } catch (error) {
+      toast.error("Erro ao salvar checklist CCR");
+    } finally {
+      setSaving(false);
     }
-
-    toast.success(
-      agentesValidos.length === 1
-        ? "Checklist registrado"
-        : `${agentesValidos.length} checklists registrados`,
-    );
-
-    setAgentes([
-      {
-        nome: "",
-        posto: "RONDANTE",
-      },
-    ]);
-    setAcao("");
-    setStatus("");
-    onCreated();
   };
 
   return (
@@ -472,8 +519,12 @@ function NovoCCRDialog({ onCreated }: { onCreated: () => void }) {
         </div>
 
         <DialogFooter>
-          <Button type="submit" className="bg-gradient-to-r from-primary to-secondary">
-            Salvar checklist
+          <Button
+            type="submit"
+            disabled={saving}
+            className="bg-gradient-to-r from-primary to-secondary"
+          >
+            {saving ? "Salvando..." : "Salvar checklist"}
           </Button>
         </DialogFooter>
       </form>

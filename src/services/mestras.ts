@@ -1,61 +1,114 @@
-import { storage, newId, nowIso, type BaseEntity } from "./storage";
+import { supabase } from "@/lib/supabase";
 
-export const MESTRAS_MANUT_KEY = "wellness_mestras_manutencao";
-export const MESTRAS_RECEP_KEY = "wellness_mestras_recepcao";
-
-export const SETORES_MANUT = ["MAN.", "CORPORATIVO"] as const;
+export const SETORES_MANUT = ["MAN."] as const;
 export const SETORES_RECEP = ["RECEPÇÃO", "MENSAGEIRO"] as const;
 
-export type SetorMestraManut = (typeof SETORES_MANUT)[number];
-export type SetorMestraRecep = (typeof SETORES_RECEP)[number];
+export type SetorManut = (typeof SETORES_MANUT)[number];
+export type SetorRecep = (typeof SETORES_RECEP)[number];
 
-export interface Mestra extends BaseEntity {
-  data: string;
+export interface Mestra {
+  id: string;
   colaborador: string;
   setor: string;
   horario_saida: string;
   agente_saida: string;
-  horario_retorno: string | null;
-  agente_retorno: string | null;
+  agente_retorno?: string | null;
+  horario_retorno?: string | null;
+  created_at?: string | null;
 }
 
-function makeService(key: string) {
+export interface NovaMestraInput {
+  colaborador: string;
+  setor: string;
+  horario_saida: string;
+  agente_saida: string;
+}
+
+export interface RetornoMestraInput {
+  agente_retorno: string;
+  horario_retorno?: string;
+}
+
+function mapFromDb(row: any): Mestra {
   return {
-    list(): Mestra[] {
-      return storage.getAll<Mestra>(key);
+    id: row.id,
+    colaborador: row.colaborador,
+    setor: row.setor,
+    horario_saida: row.horario_saida,
+    agente_saida: row.agente_saida,
+    agente_retorno: row.agente_retorno,
+    horario_retorno: row.horario_retorno,
+    created_at: row.created_at,
+  };
+}
+
+function makeService(table: string) {
+  return {
+    async list(): Promise<Mestra[]> {
+      const { data, error } = await supabase
+        .from(table)
+        .select("*")
+        .order("horario_saida", { ascending: false });
+
+      if (error) {
+        console.error(`Erro ao listar ${table}:`, error);
+        throw error;
+      }
+
+      return (data ?? []).map(mapFromDb);
     },
-    create(input: {
-      colaborador: string;
-      setor: string;
-      horario_saida: string;
-      agente_saida: string;
-    }): Mestra {
-      const item: Mestra = {
-        ...input,
-        id: newId(),
-        data: nowIso(),
-        horario_retorno: null,
-        agente_retorno: null,
-      };
-      return storage.addItem<Mestra>(key, item);
+
+    async create(input: NovaMestraInput): Promise<Mestra> {
+      const { data, error } = await supabase
+        .from(table)
+        .insert({
+          colaborador: input.colaborador,
+          setor: input.setor,
+          horario_saida: input.horario_saida,
+          agente_saida: input.agente_saida,
+        })
+        .select("*")
+        .single();
+
+      if (error) {
+        console.error(`Erro ao criar registro em ${table}:`, error);
+        throw error;
+      }
+
+      return mapFromDb(data);
     },
-    registrarRetorno(
-      id: string,
-      input: { agente_retorno: string; horario_retorno?: string },
-    ): Mestra | null {
-      return storage.updateItem<Mestra>(key, id, {
-        agente_retorno: input.agente_retorno,
-        horario_retorno: input.horario_retorno ?? nowIso(),
-      });
+
+    async registrarRetorno(id: string, input: RetornoMestraInput): Promise<Mestra | null> {
+      const { data, error } = await supabase
+        .from(table)
+        .update({
+          agente_retorno: input.agente_retorno,
+          horario_retorno: input.horario_retorno ?? new Date().toISOString(),
+        })
+        .eq("id", id)
+        .select("*")
+        .single();
+
+      if (error) {
+        console.error(`Erro ao registrar retorno em ${table}:`, error);
+        throw error;
+      }
+
+      return data ? mapFromDb(data) : null;
     },
-    update(id: string, updates: Partial<Mestra>): Mestra | null {
-      return storage.updateItem<Mestra>(key, id, updates);
-    },
-    remove(id: string): boolean {
-      return storage.deleteItem<Mestra>(key, id);
+
+    async remove(id: string): Promise<boolean> {
+      const { error } = await supabase.from(table).delete().eq("id", id);
+
+      if (error) {
+        console.error(`Erro ao excluir registro em ${table}:`, error);
+        throw error;
+      }
+
+      return true;
     },
   };
 }
 
-export const mestrasManutService = makeService(MESTRAS_MANUT_KEY);
-export const mestrasRecepService = makeService(MESTRAS_RECEP_KEY);
+export const mestrasManutService = makeService("mestras_manutencao");
+export const mestrasRecepService = makeService("mestras_recepcao");

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { TopBar } from "@/components/top-bar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,18 +39,18 @@ import {
 import type { Mestra } from "@/services/mestras";
 
 interface MestrasService {
-  list(): Mestra[];
+  list(): Promise<Mestra[]>;
   create(input: {
     colaborador: string;
     setor: string;
     horario_saida: string;
     agente_saida: string;
-  }): Mestra;
+  }): Promise<Mestra>;
   registrarRetorno(
     id: string,
     input: { agente_retorno: string; horario_retorno?: string },
-  ): Mestra | null;
-  remove(id: string): boolean;
+  ): Promise<Mestra | null>;
+  remove(id: string): Promise<boolean>;
 }
 
 interface Props {
@@ -61,11 +61,26 @@ interface Props {
 }
 
 export function MestrasPage({ title, description, service, setores }: Props) {
-  const [items, setItems] = useState<Mestra[]>(() => service.list());
+  const [items, setItems] = useState<Mestra[]>([]);
   const [open, setOpen] = useState(false);
   const [filterDate, setFilterDate] = useState<string>(todayKey);
+  const [loading, setLoading] = useState(true);
 
-  const refresh = () => setItems(service.list());
+  const refresh = async () => {
+    try {
+      setLoading(true);
+      const data = await service.list();
+      setItems(data);
+    } catch (error) {
+      toast.error("Erro ao carregar registros de mestras");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    refresh();
+  }, []);
 
   const filtered = useMemo(
     () => items.filter((m) => dateKey(m.horario_saida) === filterDate),
@@ -74,11 +89,16 @@ export function MestrasPage({ title, description, service, setores }: Props) {
 
   const abertos = filtered.filter((m) => !m.horario_retorno).length;
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (!confirm("Excluir este registro?")) return;
-    service.remove(id);
-    toast.success("Registro excluído");
-    refresh();
+
+    try {
+      await service.remove(id);
+      toast.success("Registro excluído");
+      await refresh();
+    } catch (error) {
+      toast.error("Erro ao excluir registro");
+    }
   };
 
   return (
@@ -96,8 +116,8 @@ export function MestrasPage({ title, description, service, setores }: Props) {
             <NovaMestraDialog
               service={service}
               setores={setores}
-              onCreated={() => {
-                refresh();
+              onCreated={async () => {
+                await refresh();
                 setOpen(false);
               }}
             />
@@ -126,7 +146,12 @@ export function MestrasPage({ title, description, service, setores }: Props) {
               />
             </div>
           </div>
-          {filtered.length === 0 ? (
+
+          {loading ? (
+            <div className="p-12 text-center text-sm text-muted-foreground">
+              Carregando registros...
+            </div>
+          ) : filtered.length === 0 ? (
             <div className="p-12 text-center text-sm text-muted-foreground">
               Nenhum registro nesta data.
             </div>
@@ -139,8 +164,8 @@ export function MestrasPage({ title, description, service, setores }: Props) {
                     <TableHead>Setor</TableHead>
                     <TableHead>Saída</TableHead>
                     <TableHead>Agente que entregou</TableHead>
-<TableHead>Retorno</TableHead>
-<TableHead>Agente que recebeu</TableHead>
+                    <TableHead>Retorno</TableHead>
+                    <TableHead>Agente que recebeu</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
@@ -173,22 +198,32 @@ function Row({
 }: {
   m: Mestra;
   service: MestrasService;
-  onChange: () => void;
-  onDelete: (id: string) => void;
+  onChange: () => Promise<void>;
+  onDelete: (id: string) => Promise<void>;
 }) {
   const [open, setOpen] = useState(false);
   const [agente, setAgente] = useState("");
   const [horario, setHorario] = useState(() => toLocalInput(new Date().toISOString()));
+  const [saving, setSaving] = useState(false);
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    service.registrarRetorno(m.id, {
-      agente_retorno: agente.trim(),
-      horario_retorno: fromLocalInput(horario),
-    });
-    toast.success("Retorno registrado");
-    setOpen(false);
-    onChange();
+
+    try {
+      setSaving(true);
+      await service.registrarRetorno(m.id, {
+        agente_retorno: agente.trim(),
+        horario_retorno: fromLocalInput(horario),
+      });
+
+      toast.success("Retorno registrado");
+      setOpen(false);
+      await onChange();
+    } catch (error) {
+      toast.error("Erro ao registrar retorno");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -196,17 +231,11 @@ function Row({
       <TableCell className="font-medium">{m.colaborador}</TableCell>
       <TableCell className="text-xs">{m.setor}</TableCell>
       <TableCell className="text-xs">{formatDateTime(m.horario_saida)}</TableCell>
-      <TableCell className="text-xs align-middle text-left">
-  {m.agente_saida}
-</TableCell>
-
-<TableCell className="text-xs align-middle">
-  {formatDateTime(m.horario_retorno)}
-</TableCell>
-
-<TableCell className="text-xs align-middle text-left">
-  {m.agente_retorno ?? "—"}
-</TableCell>
+      <TableCell className="text-xs">{m.agente_saida}</TableCell>
+      <TableCell className="text-xs">
+        {m.horario_retorno ? formatDateTime(m.horario_retorno) : "—"}
+      </TableCell>
+      <TableCell className="text-xs">{m.agente_retorno ?? "—"}</TableCell>
       <TableCell>
         {m.horario_retorno ? (
           <Badge className="bg-success text-success-foreground">Devolvida</Badge>
@@ -230,7 +259,11 @@ function Row({
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
                     <Label>Agente que recebeu</Label>
-<Input value={agente} onChange={(e) => setAgente(e.target.value)} autoFocus />
+                    <Input
+                      value={agente}
+                      onChange={(e) => setAgente(e.target.value)}
+                      autoFocus
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label>Horário</Label>
@@ -242,8 +275,12 @@ function Row({
                   </div>
                 </div>
                 <DialogFooter>
-                  <Button type="submit" className="bg-gradient-to-r from-primary to-secondary">
-                    Confirmar retorno
+                  <Button
+                    type="submit"
+                    disabled={saving}
+                    className="bg-gradient-to-r from-primary to-secondary"
+                  >
+                    {saving ? "Confirmando..." : "Confirmar retorno"}
                   </Button>
                 </DialogFooter>
               </form>
@@ -265,29 +302,40 @@ function NovaMestraDialog({
 }: {
   service: MestrasService;
   setores: readonly string[];
-  onCreated: () => void;
+  onCreated: () => Promise<void>;
 }) {
   const [colaborador, setColaborador] = useState("");
   const [setor, setSetor] = useState<string>(setores[0]);
   const [agente, setAgente] = useState("");
   const [saida, setSaida] = useState(() => toLocalInput(new Date().toISOString()));
+  const [saving, setSaving] = useState(false);
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     if (!colaborador.trim()) {
       toast.error("Informe o colaborador");
       return;
     }
-    service.create({
-      colaborador: colaborador.trim(),
-      setor,
-      horario_saida: fromLocalInput(saida),
-      agente_saida: agente.trim(),
-    });
-    toast.success("Saída registrada");
-    setColaborador("");
-    setAgente("");
-    onCreated();
+
+    try {
+      setSaving(true);
+      await service.create({
+        colaborador: colaborador.trim(),
+        setor,
+        horario_saida: fromLocalInput(saida),
+        agente_saida: agente.trim(),
+      });
+
+      toast.success("Saída registrada");
+      setColaborador("");
+      setAgente("");
+      await onCreated();
+    } catch (error) {
+      toast.error("Erro ao registrar saída");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -317,11 +365,15 @@ function NovaMestraDialog({
         </div>
         <div className="space-y-2">
           <Label>Agente que entregou</Label>
-<Input value={agente} onChange={(e) => setAgente(e.target.value)} />
+          <Input value={agente} onChange={(e) => setAgente(e.target.value)} />
         </div>
         <DialogFooter>
-          <Button type="submit" className="bg-gradient-to-r from-primary to-secondary">
-            Registrar
+          <Button
+            type="submit"
+            disabled={saving}
+            className="bg-gradient-to-r from-primary to-secondary"
+          >
+            {saving ? "Registrando..." : "Registrar"}
           </Button>
         </DialogFooter>
       </form>
