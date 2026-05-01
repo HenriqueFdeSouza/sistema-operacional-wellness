@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { TopBar } from "@/components/top-bar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,11 +32,26 @@ export const Route = createFileRoute("/_app/pcp")({
 });
 
 function PCPPage() {
-  const [items, setItems] = useState<PCP[]>(() => pcpService.list());
+  const [items, setItems] = useState<PCP[]>([]);
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(true);
 
-  const refresh = () => setItems(pcpService.list());
+  const refresh = async () => {
+    try {
+      setLoading(true);
+      const data = await pcpService.list();
+      setItems(data);
+    } catch (error) {
+      toast.error("Erro ao carregar registros do PCP");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    refresh();
+  }, []);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -57,11 +72,16 @@ function PCPPage() {
     return Array.from(map.entries()).sort((a, b) => b[0].localeCompare(a[0]));
   }, [filtered]);
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (!confirm("Excluir esta retirada?")) return;
-    pcpService.remove(id);
-    toast.success("Registro excluído");
-    refresh();
+
+    try {
+      await pcpService.remove(id);
+      toast.success("Registro excluído");
+      await refresh();
+    } catch (error) {
+      toast.error("Erro ao excluir registro");
+    }
   };
 
   return (
@@ -77,8 +97,8 @@ function PCPPage() {
               </Button>
             </DialogTrigger>
             <NovaPCPDialog
-              onCreated={() => {
-                refresh();
+              onCreated={async () => {
+                await refresh();
                 setOpen(false);
               }}
             />
@@ -99,7 +119,11 @@ function PCPPage() {
           </span>
         </div>
 
-        {grouped.length === 0 ? (
+        {loading ? (
+          <div className="bg-card border border-border rounded-xl p-12 text-center text-sm text-muted-foreground">
+            Carregando registros...
+          </div>
+        ) : grouped.length === 0 ? (
           <div className="bg-card border border-border rounded-xl p-12 text-center text-sm text-muted-foreground">
             Nenhuma retirada registrada.
           </div>
@@ -144,57 +168,66 @@ function PCPPage() {
   );
 }
 
-function NovaPCPDialog({ onCreated }: { onCreated: () => void }) {
+function NovaPCPDialog({ onCreated }: { onCreated: () => Promise<void> }) {
   const [nome, setNome] = useState("");
   const [produto, setProduto] = useState("");
-  const [data, setData] = useState(() => new Date().toISOString().slice(0, 10));
+  const [saving, setSaving] = useState(false);
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     if (!nome.trim() || !produto.trim()) {
-      toast.error("Preencha nome e produto");
+      toast.error("Informe nome e produto");
       return;
     }
-    pcpService.create({
-      nome: nome.trim(),
-      produto: produto.trim().toUpperCase(),
-      data: new Date(data + "T12:00:00").toISOString(),
-    });
-    toast.success("Retirada registrada");
-    setNome("");
-    setProduto("");
-    onCreated();
+
+    try {
+      setSaving(true);
+      await pcpService.create({
+        nome: nome.trim(),
+        produto: produto.trim(),
+      });
+
+      toast.success("Retirada registrada");
+      setNome("");
+      setProduto("");
+      await onCreated();
+    } catch (error) {
+      toast.error("Erro ao registrar retirada");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
     <DialogContent>
       <DialogHeader>
-        <DialogTitle>Nova retirada</DialogTitle>
+        <DialogTitle>Nova retirada de produto</DialogTitle>
       </DialogHeader>
+
       <form onSubmit={submit} className="space-y-4">
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="space-y-2">
-            <Label>Data</Label>
-            <Input type="date" value={data} onChange={(e) => setData(e.target.value)} />
-          </div>
-          <div className="space-y-2">
-            <Label>Nome</Label>
-            <Input value={nome} onChange={(e) => setNome(e.target.value)} autoFocus />
-          </div>
+        <div className="space-y-2">
+          <Label>Nome</Label>
+          <Input value={nome} onChange={(e) => setNome(e.target.value)} autoFocus />
         </div>
+
         <div className="space-y-2">
           <Label>Produto</Label>
           <Textarea
             value={produto}
             onChange={(e) => setProduto(e.target.value)}
-            placeholder="Ex: 02 PCT DE AÇÚCAR"
-            rows={2}
-            className="uppercase"
+            rows={3}
+            placeholder="Descreva o produto retirado"
           />
         </div>
+
         <DialogFooter>
-          <Button type="submit" className="bg-gradient-to-r from-primary to-secondary">
-            Registrar
+          <Button
+            type="submit"
+            disabled={saving}
+            className="bg-gradient-to-r from-primary to-secondary"
+          >
+            {saving ? "Registrando..." : "Registrar retirada"}
           </Button>
         </DialogFooter>
       </form>

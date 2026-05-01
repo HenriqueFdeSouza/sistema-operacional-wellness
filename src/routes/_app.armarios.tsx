@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { TopBar } from "@/components/top-bar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,11 +23,11 @@ import { toast } from "sonner";
 import { Lock, Search, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
-  TIPOS_CADEADO,
+  TIPOS_TERMO,
   armariosFemService,
   armariosMascService,
   type Armario,
-  type TipoCadeado,
+  type TipoTermo,
 } from "@/services/armarios";
 
 export const Route = createFileRoute("/_app/armarios")({
@@ -76,18 +76,16 @@ function statusStyle(a: Armario | undefined) {
   if (!a || !a.nome_colaborador.trim()) {
     return "bg-muted text-muted-foreground border-border";
   }
-  switch (a.cadeado) {
-    case "VAGO":
-      return "bg-muted text-muted-foreground border-border";
-    case "QUEBRA DE CADEADO":
-      return "bg-destructive/15 border-destructive text-destructive";
-    case "CADEADO DO COLABORADOR":
-      return "bg-warning/20 border-warning text-foreground";
-    case "CADEADO DA SEGURANÇA":
-      return "bg-success/20 border-success text-foreground";
-    default:
-      return "bg-card border-border text-foreground";
+
+  if (a.termo === "FALTA ASSINAR O TERMO") {
+    return "bg-destructive/20 border-destructive text-destructive";
   }
+
+  if (a.termo === "TERMO OK") {
+    return "bg-success/25 border-success text-foreground";
+  }
+
+  return "bg-card border-border text-foreground";
 }
 
 function ArmariosGrid({
@@ -99,15 +97,30 @@ function ArmariosGrid({
   accentBar: string;
   label: string;
 }) {
-  const [items, setItems] = useState<Armario[]>(() => service.list());
+  const [items, setItems] = useState<Armario[]>([]);
   const [search, setSearch] = useState("");
-  const [total, setTotal] = useState(() => {
-    const max = items.reduce((m, a) => Math.max(m, a.numero), 0);
-    return Math.max(TOTAL_DEFAULT, max);
-  });
+  const [total, setTotal] = useState(TOTAL_DEFAULT);
   const [editing, setEditing] = useState<{ numero: number; armario?: Armario } | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const refresh = () => setItems(service.list());
+  const refresh = async () => {
+    try {
+      setLoading(true);
+      const data = await service.list();
+      setItems(data);
+
+      const max = data.reduce((m, a) => Math.max(m, a.numero), 0);
+      setTotal((current) => Math.max(current, TOTAL_DEFAULT, max));
+    } catch (error) {
+      toast.error("Erro ao carregar armários");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    refresh();
+  }, []);
 
   const byNumero = useMemo(() => {
     const m = new Map<number, Armario>();
@@ -142,7 +155,7 @@ function ArmariosGrid({
     let ocupados = 0;
     let vagos = 0;
     cells.forEach((c) => {
-      if (c.armario && c.armario.nome_colaborador.trim() && c.armario.cadeado !== "VAGO") {
+      if (c.armario && c.armario.nome_colaborador.trim()) {
         ocupados++;
       } else {
         vagos++;
@@ -186,33 +199,46 @@ function ArmariosGrid({
 
       <div className="bg-card border border-border rounded-xl p-4">
         <div className="flex flex-wrap gap-3 mb-4 text-xs">
-          <Legend className="bg-muted border-border" label="Vago" />
-          <Legend className="bg-success/20 border-success" label="Cadeado segurança" />
-          <Legend className="bg-warning/20 border-warning" label="Cadeado colaborador" />
-          <Legend className="bg-destructive/15 border-destructive" label="Quebra de cadeado" />
-        </div>
-        <div className="grid gap-2 grid-cols-[repeat(auto-fill,minmax(96px,1fr))]">
-          {filtered.map((cell) => (
-            <button
-              key={cell.numero}
-              onClick={() => setEditing(cell)}
-              className={cn(
-                "border-2 rounded-lg p-2 text-left transition-all hover:scale-[1.03] hover:shadow-md",
-                statusStyle(cell.armario),
-              )}
-            >
-              <div className="font-display font-bold text-lg leading-none">
-                {String(cell.numero).padStart(2, "0")}
-              </div>
-              <div className="text-[10px] mt-1 truncate font-medium">
-                {cell.armario?.nome_colaborador || "—"}
-              </div>
-              <div className="text-[9px] truncate opacity-70">
-                {cell.armario?.setor || ""}
-              </div>
-            </button>
-          ))}
-        </div>
+  <Legend className="bg-success/25 border-success" label="Termo OK" />
+  <Legend className="bg-destructive/20 border-destructive" label="Falta assinar o termo" />
+</div>
+
+        {loading ? (
+          <div className="p-12 text-center text-sm text-muted-foreground">
+            Carregando armários...
+          </div>
+        ) : (
+          <div className="grid gap-2 grid-cols-[repeat(auto-fill,minmax(96px,1fr))]">
+            {filtered.map((cell) => (
+              <button
+                key={cell.numero}
+                onClick={() => setEditing(cell)}
+                className={cn(
+                  "border-2 rounded-lg p-2 text-left transition-all hover:scale-[1.03] hover:shadow-md",
+                  statusStyle(cell.armario),
+                )}
+              >
+                <div className="font-display font-bold text-lg leading-none">
+                  {String(cell.numero).padStart(2, "0")}
+                </div>
+                <div className="text-[10px] mt-1 truncate font-medium">
+                  {cell.armario?.nome_colaborador || "—"}
+                </div>
+                <div className="text-[9px] truncate opacity-70">
+  {cell.armario?.setor || ""}
+</div>
+
+<div className="text-[9px] font-semibold">
+  {cell.armario?.termo === "TERMO OK"
+    ? "✔ Termo OK"
+    : cell.armario
+    ? "⚠ Sem termo"
+    : ""}
+</div>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {editing && (
@@ -221,8 +247,8 @@ function ArmariosGrid({
           armario={editing.armario}
           service={service}
           onClose={() => setEditing(null)}
-          onSaved={() => {
-            refresh();
+          onSaved={async () => {
+            await refresh();
             setEditing(null);
           }}
         />
@@ -270,33 +296,49 @@ function ArmarioDialog({
   armario?: Armario;
   service: Service;
   onClose: () => void;
-  onSaved: () => void;
+  onSaved: () => Promise<void>;
 }) {
   const [nome, setNome] = useState(armario?.nome_colaborador ?? "");
   const [matricula, setMatricula] = useState(armario?.matricula ?? "");
   const [setor, setSetor] = useState(armario?.setor ?? "");
-  const [cadeado, setCadeado] = useState<TipoCadeado>(armario?.cadeado ?? "VAGO");
-  const [observacao, setObservacao] = useState(armario?.observacao ?? "");
+const [termo, setTermo] = useState<TipoTermo>(
+  armario?.termo ?? "FALTA ASSINAR O TERMO",
+);
+const [observacao, setObservacao] = useState(armario?.observacao ?? "");
+  const [saving, setSaving] = useState(false);
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    service.upsertByNumero(numero, {
-      nome_colaborador: nome.trim(),
-      matricula: matricula.trim(),
-      setor: setor.trim().toUpperCase(),
-      cadeado,
-      observacao: observacao.trim().toUpperCase(),
-    });
-    toast.success(`Armário ${numero} atualizado`);
-    onSaved();
+
+    try {
+      setSaving(true);
+      await service.upsertByNumero(numero, {
+  nome_colaborador: nome.trim(),
+  matricula: matricula.trim(),
+  setor: setor.trim().toUpperCase(),
+  termo,
+  observacao: observacao.trim().toUpperCase(),
+});
+      toast.success(`Armário ${numero} atualizado`);
+      await onSaved();
+    } catch (error) {
+      toast.error("Erro ao salvar armário");
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!armario) return;
     if (!confirm("Limpar este armário?")) return;
-    service.remove(armario.id);
-    toast.success("Armário liberado");
-    onSaved();
+
+    try {
+      await service.remove(armario.id);
+      toast.success("Armário liberado");
+      await onSaved();
+    } catch (error) {
+      toast.error("Erro ao limpar armário");
+    }
   };
 
   return (
@@ -325,16 +367,20 @@ function ArmarioDialog({
             </div>
           </div>
           <div className="space-y-2">
-            <Label>Cadeado</Label>
-            <Select value={cadeado} onValueChange={(v) => setCadeado(v as TipoCadeado)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {TIPOS_CADEADO.map((c) => (
-                  <SelectItem key={c} value={c}>{c}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+  <Label>Termo</Label>
+  <Select value={termo} onValueChange={(v) => setTermo(v as TipoTermo)}>
+    <SelectTrigger>
+      <SelectValue />
+    </SelectTrigger>
+    <SelectContent>
+      {TIPOS_TERMO.map((t) => (
+        <SelectItem key={t} value={t}>
+          {t}
+        </SelectItem>
+      ))}
+    </SelectContent>
+  </Select>
+</div>
           <div className="space-y-2">
             <Label>Observação</Label>
             <Input
@@ -349,9 +395,15 @@ function ArmarioDialog({
               <Button type="button" variant="ghost" onClick={handleDelete}>
                 <Trash2 className="h-4 w-4 mr-1 text-destructive" /> Limpar
               </Button>
-            ) : <span />}
-            <Button type="submit" className="bg-gradient-to-r from-primary to-secondary">
-              Salvar
+            ) : (
+              <span />
+            )}
+            <Button
+              type="submit"
+              disabled={saving}
+              className="bg-gradient-to-r from-primary to-secondary"
+            >
+              {saving ? "Salvando..." : "Salvar"}
             </Button>
           </DialogFooter>
         </form>

@@ -1,17 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { TopBar } from "@/components/top-bar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -47,22 +40,39 @@ function badgeColor(o: ObservacaoVeiculo) {
   switch (o) {
     case "PROPRIETÁRIO":
       return "bg-success text-success-foreground";
-    case "LOCATÁRIO":
+    case "PRESTADOR DE SERVIÇO":
       return "bg-secondary text-secondary-foreground";
-    case "VISITANTE/PROCURADOR":
-      return "bg-warning text-warning-foreground";
-    case "GOVERNANÇA":
+    case "GESTOR":
       return "bg-accent text-accent-foreground";
+    case "VISITANTE":
+      return "bg-warning text-warning-foreground";
+    default:
+      return "bg-muted text-muted-foreground";
   }
 }
 
 function VeiculosPage() {
-  const [items, setItems] = useState<Veiculo[]>(() => veiculosService.list());
+  const [items, setItems] = useState<Veiculo[]>([]);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Veiculo | null>(null);
   const [q, setQ] = useState("");
+  const [loading, setLoading] = useState(true);
 
-  const refresh = () => setItems(veiculosService.list());
+  const refresh = async () => {
+    try {
+      setLoading(true);
+      const data = await veiculosService.list();
+      setItems(data);
+    } catch (error) {
+      toast.error("Erro ao carregar veículos");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    refresh();
+  }, []);
 
   const filtered = useMemo(() => {
     const s = q.trim().toLowerCase();
@@ -76,11 +86,16 @@ function VeiculosPage() {
     );
   }, [items, q]);
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (!confirm("Excluir este veículo?")) return;
-    veiculosService.remove(id);
-    toast.success("Veículo excluído");
-    refresh();
+
+    try {
+      await veiculosService.remove(id);
+      toast.success("Veículo excluído");
+      await refresh();
+    } catch (error) {
+      toast.error("Erro ao excluir veículo");
+    }
   };
 
   return (
@@ -106,8 +121,8 @@ function VeiculosPage() {
             </DialogTrigger>
             <VeiculoDialog
               veiculo={editing}
-              onSaved={() => {
-                refresh();
+              onSaved={async () => {
+                await refresh();
                 setOpen(false);
                 setEditing(null);
               }}
@@ -133,7 +148,12 @@ function VeiculosPage() {
           <div className="p-4 border-b border-border flex items-center gap-2 text-sm font-medium">
             <Car className="h-4 w-4 text-secondary" /> Veículos cadastrados
           </div>
-          {filtered.length === 0 ? (
+
+          {loading ? (
+            <div className="p-12 text-center text-sm text-muted-foreground">
+              Carregando veículos...
+            </div>
+          ) : filtered.length === 0 ? (
             <div className="p-12 text-center text-sm text-muted-foreground">
               Nenhum veículo encontrado.
             </div>
@@ -198,7 +218,7 @@ function VeiculoDialog({
   onSaved,
 }: {
   veiculo: Veiculo | null;
-  onSaved: () => void;
+  onSaved: () => Promise<void>;
 }) {
   const [uh, setUh] = useState(veiculo?.uh ?? "");
   const [nome, setNome] = useState(veiculo?.nome ?? "");
@@ -209,13 +229,16 @@ function VeiculoDialog({
     veiculo?.observacoes ?? "PROPRIETÁRIO",
   );
   const [autorizacoes, setAutorizacoes] = useState(veiculo?.autorizacoes ?? "");
+  const [saving, setSaving] = useState(false);
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     if (!nome.trim() || !placa.trim()) {
       toast.error("Informe nome e placa");
       return;
     }
+
     const data = {
       uh: uh.trim(),
       nome: nome.trim(),
@@ -225,14 +248,24 @@ function VeiculoDialog({
       observacoes,
       autorizacoes: autorizacoes.trim(),
     };
-    if (veiculo) {
-      veiculosService.update(veiculo.id, data);
-      toast.success("Veículo atualizado");
-    } else {
-      veiculosService.create(data);
-      toast.success("Veículo cadastrado");
+
+    try {
+      setSaving(true);
+
+      if (veiculo) {
+        await veiculosService.update(veiculo.id, data);
+        toast.success("Veículo atualizado");
+      } else {
+        await veiculosService.create(data);
+        toast.success("Veículo cadastrado");
+      }
+
+      await onSaved();
+    } catch (error) {
+      toast.error(veiculo ? "Erro ao atualizar veículo" : "Erro ao cadastrar veículo");
+    } finally {
+      setSaving(false);
     }
-    onSaved();
   };
 
   return (
@@ -266,24 +299,21 @@ function VeiculoDialog({
           </div>
         </div>
         <div className="space-y-2">
-  <Label>Tipo</Label>
+          <Label>Tipo</Label>
 
-  <Input
-    list="tipos-veiculo"
-    value={observacoes}
-    onChange={(e) =>
-      setObservacoes(e.target.value as ObservacaoVeiculo)
-    }
-    placeholder="Selecione ou digite o tipo"
-  />
+          <Input
+            list="tipos-veiculo"
+            value={observacoes}
+            onChange={(e) => setObservacoes(e.target.value as ObservacaoVeiculo)}
+            placeholder="Selecione ou digite o tipo"
+          />
 
-  <datalist id="tipos-veiculo">
-    <option value="PROPRIETÁRIO" />
-    <option value="PRESTADOR DE SERVIÇO" />
-    <option value="GESTOR" />
-    <option value="VISITANTE" />
-  </datalist>
-</div>
+          <datalist id="tipos-veiculo">
+            {OBSERVACOES_VEICULO.map((o) => (
+              <option key={o} value={o} />
+            ))}
+          </datalist>
+        </div>
         <div className="space-y-2">
           <Label>Autorizações (opcional)</Label>
           <Textarea
@@ -293,8 +323,12 @@ function VeiculoDialog({
           />
         </div>
         <DialogFooter>
-          <Button type="submit" className="bg-gradient-to-r from-primary to-secondary">
-            {veiculo ? "Salvar alterações" : "Cadastrar"}
+          <Button
+            type="submit"
+            disabled={saving}
+            className="bg-gradient-to-r from-primary to-secondary"
+          >
+            {saving ? "Salvando..." : veiculo ? "Salvar alterações" : "Cadastrar"}
           </Button>
         </DialogFooter>
       </form>
