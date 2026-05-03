@@ -151,6 +151,10 @@ function ArmariosGrid({
     });
   }, [cells, search]);
 
+  const minTotal = useMemo(() => {
+  return items.reduce((maior, armario) => Math.max(maior, armario.numero), 0);
+}, [items]);
+
   const stats = useMemo(() => {
     let ocupados = 0;
     let vagos = 0;
@@ -188,12 +192,23 @@ function ArmariosGrid({
         <div className="flex items-center gap-2 ml-auto">
           <Label className="text-xs text-muted-foreground">Total</Label>
           <Input
-            type="number"
-            min={1}
-            value={total}
-            onChange={(e) => setTotal(Math.max(1, Number(e.target.value) || 1))}
-            className="w-24"
-          />
+  type="number"
+  min={Math.max(1, minTotal)}
+  value={total}
+  onChange={(e) => {
+    const valorDigitado = Number(e.target.value) || 1;
+    const minimoPermitido = Math.max(1, minTotal);
+
+    if (valorDigitado < minimoPermitido) {
+      toast.error(`Não é possível reduzir abaixo de ${minimoPermitido}, pois existem armários cadastrados até esse número.`);
+      setTotal(minimoPermitido);
+      return;
+    }
+
+    setTotal(valorDigitado);
+  }}
+  className="w-24"
+/>
         </div>
       </div>
 
