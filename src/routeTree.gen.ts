@@ -13,6 +13,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppVeiculosRouteImport } from './routes/_app.veiculos'
+import { Route as AppSegurancaOperacionalRouteImport } from './routes/_app.seguranca-operacional'
 import { Route as AppRadiosRouteImport } from './routes/_app.radios'
 import { Route as AppPcpRouteImport } from './routes/_app.pcp'
 import { Route as AppMestrasRecepcaoRouteImport } from './routes/_app.mestras-recepcao'
@@ -38,6 +39,11 @@ const IndexRoute = IndexRouteImport.update({
 const AppVeiculosRoute = AppVeiculosRouteImport.update({
   id: '/veiculos',
   path: '/veiculos',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSegurancaOperacionalRoute = AppSegurancaOperacionalRouteImport.update({
+  id: '/seguranca-operacional',
+  path: '/seguranca-operacional',
   getParentRoute: () => AppRoute,
 } as any)
 const AppRadiosRoute = AppRadiosRouteImport.update({
@@ -86,6 +92,7 @@ export interface FileRoutesByFullPath {
   '/mestras-recepcao': typeof AppMestrasRecepcaoRoute
   '/pcp': typeof AppPcpRoute
   '/radios': typeof AppRadiosRoute
+  '/seguranca-operacional': typeof AppSegurancaOperacionalRoute
   '/veiculos': typeof AppVeiculosRoute
 }
 export interface FileRoutesByTo {
@@ -98,6 +105,7 @@ export interface FileRoutesByTo {
   '/mestras-recepcao': typeof AppMestrasRecepcaoRoute
   '/pcp': typeof AppPcpRoute
   '/radios': typeof AppRadiosRoute
+  '/seguranca-operacional': typeof AppSegurancaOperacionalRoute
   '/veiculos': typeof AppVeiculosRoute
 }
 export interface FileRoutesById {
@@ -112,6 +120,7 @@ export interface FileRoutesById {
   '/_app/mestras-recepcao': typeof AppMestrasRecepcaoRoute
   '/_app/pcp': typeof AppPcpRoute
   '/_app/radios': typeof AppRadiosRoute
+  '/_app/seguranca-operacional': typeof AppSegurancaOperacionalRoute
   '/_app/veiculos': typeof AppVeiculosRoute
 }
 export interface FileRouteTypes {
@@ -126,6 +135,7 @@ export interface FileRouteTypes {
     | '/mestras-recepcao'
     | '/pcp'
     | '/radios'
+    | '/seguranca-operacional'
     | '/veiculos'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -138,6 +148,7 @@ export interface FileRouteTypes {
     | '/mestras-recepcao'
     | '/pcp'
     | '/radios'
+    | '/seguranca-operacional'
     | '/veiculos'
   id:
     | '__root__'
@@ -151,6 +162,7 @@ export interface FileRouteTypes {
     | '/_app/mestras-recepcao'
     | '/_app/pcp'
     | '/_app/radios'
+    | '/_app/seguranca-operacional'
     | '/_app/veiculos'
   fileRoutesById: FileRoutesById
 }
@@ -188,6 +200,13 @@ declare module '@tanstack/react-router' {
       path: '/veiculos'
       fullPath: '/veiculos'
       preLoaderRoute: typeof AppVeiculosRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/seguranca-operacional': {
+      id: '/_app/seguranca-operacional'
+      path: '/seguranca-operacional'
+      fullPath: '/seguranca-operacional'
+      preLoaderRoute: typeof AppSegurancaOperacionalRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/radios': {
@@ -250,6 +269,7 @@ interface AppRouteChildren {
   AppMestrasRecepcaoRoute: typeof AppMestrasRecepcaoRoute
   AppPcpRoute: typeof AppPcpRoute
   AppRadiosRoute: typeof AppRadiosRoute
+  AppSegurancaOperacionalRoute: typeof AppSegurancaOperacionalRoute
   AppVeiculosRoute: typeof AppVeiculosRoute
 }
 
@@ -261,6 +281,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppMestrasRecepcaoRoute: AppMestrasRecepcaoRoute,
   AppPcpRoute: AppPcpRoute,
   AppRadiosRoute: AppRadiosRoute,
+  AppSegurancaOperacionalRoute: AppSegurancaOperacionalRoute,
   AppVeiculosRoute: AppVeiculosRoute,
 }
 

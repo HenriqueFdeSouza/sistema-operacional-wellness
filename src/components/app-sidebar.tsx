@@ -24,6 +24,7 @@ const NAV = [
   { to: "/pcp", label: "PCP", icon: ShoppingCart },
   { to: "/veiculos", label: "Veículos", icon: Car },
   { to: "/armarios", label: "Armários", icon: Lock },
+  { to: "/seguranca-operacional", label: "Seg. Operacional", icon: ShieldCheck },
 ] as const;
 
 export function AppSidebar() {

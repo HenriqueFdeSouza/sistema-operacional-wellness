@@ -29,7 +29,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Plus, RotateCcw, Trash2, Radio as RadioIcon } from "lucide-react";
+import { Plus, RotateCcw, Trash2, Radio as RadioIcon, Search } from "lucide-react";
 import {
   ALTERACOES_RADIO,
   SETORES_RADIO,
@@ -72,6 +72,8 @@ function todayKey(iso: string) {
 
 function RadiosPage() {
   const [items, setItems] = useState<RadioItem[]>([]);
+  const [buscaNome, setBuscaNome] = useState("");
+const [buscaRadio, setBuscaRadio] = useState("");
   const [open, setOpen] = useState(false);
   const [filterDate, setFilterDate] = useState<string>(() =>
     new Date().toISOString().slice(0, 10),
@@ -94,10 +96,22 @@ function RadiosPage() {
     refresh();
   }, []);
 
-  const filtered = useMemo(
-    () => items.filter((r) => todayKey(r.saida) === filterDate),
-    [items, filterDate],
-  );
+  const filtered = useMemo(() => {
+  const nome = buscaNome.trim().toLowerCase();
+  const radio = buscaRadio.trim().toLowerCase();
+
+  return items.filter((r) => {
+    const sameDate = todayKey(r.saida) === filterDate;
+
+    const matchNome =
+      !nome || r.colaborador.toLowerCase().includes(nome);
+
+    const matchRadio =
+      !radio || r.id_radio.toLowerCase().includes(radio);
+
+    return sameDate && matchNome && matchRadio;
+  });
+}, [items, filterDate, buscaNome, buscaRadio]);
 
   const abertos = filtered.filter((r) => !r.retorno).length;
 
@@ -151,7 +165,45 @@ function RadiosPage() {
           <StatCard label="Em uso" value={abertos} tone="warning" />
           <StatCard label="Devolvidos" value={filtered.length - abertos} tone="success" />
         </div>
+        <div className="bg-card border border-border rounded-xl p-4 space-y-4">
+  <div className="grid gap-4 md:grid-cols-2">
+    
+    <div className="space-y-1">
+      <p className="text-sm font-semibold text-foreground">
+        Buscar por Nome
+      </p>
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-primary" />
+        <Input
+          placeholder="Ex: Henrique"
+          value={buscaNome}
+          onChange={(e) => setBuscaNome(e.target.value)}
+          className="pl-9"
+        />
+      </div>
+    </div>
 
+    <div className="space-y-1">
+      <p className="text-sm font-semibold text-foreground">
+        Buscar por Rádio
+      </p>
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-primary" />
+        <Input
+          placeholder="Ex: 75TR"
+          value={buscaRadio}
+          onChange={(e) => setBuscaRadio(e.target.value)}
+          className="pl-9 uppercase"
+        />
+      </div>
+    </div>
+
+  </div>
+
+  <p className="text-sm text-muted-foreground">
+    {filtered.length} de {items.length} registros
+  </p>
+</div>
         <div className="bg-card border border-border rounded-xl">
           <div className="p-4 border-b border-border flex items-center justify-between gap-4 flex-wrap">
             <div className="flex items-center gap-2 text-sm font-medium text-foreground">
