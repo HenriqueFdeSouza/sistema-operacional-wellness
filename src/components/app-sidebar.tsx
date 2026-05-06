@@ -10,6 +10,7 @@ import {
   Lock,
   LogOut,
   LayoutDashboard,
+  FileText,
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
@@ -25,6 +26,7 @@ const NAV = [
   { to: "/veiculos", label: "Veículos", icon: Car },
   { to: "/armarios", label: "Armários", icon: Lock },
   { to: "/seguranca-operacional", label: "Seg. Operacional", icon: ShieldCheck },
+  { to: "/resumo-plantao", label: "Resumo Plantão", icon: FileText },
 ] as const;
 
 export function AppSidebar() {

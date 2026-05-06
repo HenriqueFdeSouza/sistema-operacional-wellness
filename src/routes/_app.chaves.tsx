@@ -354,20 +354,22 @@ function NovaChaveDialog({ onCreated }: { onCreated: () => Promise<void> }) {
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
-            <Label htmlFor="setor">Setor</Label>
-            <Select value={setor} onValueChange={setSetor}>
-              <SelectTrigger id="setor">
-                <SelectValue placeholder="Selecione o setor" />
-              </SelectTrigger>
-              <SelectContent>
-                {SETORES_CHAVE.map((s) => (
-                  <SelectItem key={s} value={s}>
-                    {s}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+  <Label htmlFor="setor">Setor</Label>
+
+  <Input
+    id="setor"
+    list="setores-chave"
+    value={setor}
+    onChange={(e) => setSetor(e.target.value)}
+    placeholder="Selecione ou digite o setor"
+  />
+
+  <datalist id="setores-chave">
+    {SETORES_CHAVE.map((s) => (
+      <option key={s} value={s} />
+    ))}
+  </datalist>
+</div>
           <div className="space-y-2">
             <Label htmlFor="agente">Agente que entregou</Label>
             <Input
